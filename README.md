@@ -28,7 +28,8 @@ automation-exercise-tests
 │   └── maven-wrapper.properties          # pins the Maven version used by mvnw
 ├── docker
 │   ├── kiwitcms/docker-compose.yml       # local Kiwi TCMS (test case management)
-│   └── reportportal/docker-compose.yml   # local ReportPortal (test run reporting)
+│   ├── reportportal/docker-compose.yml   # local ReportPortal (test run reporting)
+│   └── selenium-grid/docker-compose.yml  # local Selenium Grid: Chrome, Edge, Firefox + noVNC
 ├── mvnw / mvnw.cmd                       # Maven Wrapper scripts (Unix / Windows)
 ├── Jenkinsfile                           # Jenkins pipeline: compile, API and UI stages, JUnit + Allure reports
 ├── pom.xml
@@ -45,9 +46,10 @@ automation-exercise-tests
     │   │   │   ├── Config.java               # layered configuration loader
     │   │   │   └── Timeouts.java             # SHORT / MEDIUM / LONG wait durations
     │   │   ├── driver
-    │   │   │   ├── DriverFactory.java        # creates the WebDriver instance
+    │   │   │   ├── DriverFactory.java        # creates Chrome, Edge or Firefox, locally or on Selenium Grid
     │   │   │   └── DriverManager.java        # holds the current test's WebDriver
     │   │   ├── extensions
+    │   │   │   ├── ConsoleProgressExtension.java # prints each test's start, result, time and error to the console
     │   │   │   └── ScreenshotOnFailureExtension.java # on UI failure: screenshot + HTML to target/screenshots, Allure, ReportPortal
     │   │   └── pages
     │   │       ├── BasePage.java             # explicit-wait helpers: click, type, getText, isVisible, isNotVisible
@@ -70,7 +72,7 @@ automation-exercise-tests
         │       ├── BaseWebTests.java         # driver setup/teardown, opens app, accepts cookies
         │       └── LoginTests.java
         └── resources
-            ├── META-INF/services/...Extension # registers the ReportPortal JUnit 5 agent
+            ├── META-INF/services/...Extension # registers console progress and the ReportPortal JUnit 5 agent
             ├── allure.properties             # writes Allure results to target/allure-results
             ├── junit-platform.properties     # turns on JUnit extension auto-detection
             ├── reportportal.properties       # ReportPortal endpoint, project, launch; off by default
@@ -119,12 +121,28 @@ Each test has a unique ID, a JUnit `@Tag` that matches the scenario number on th
 ```properties
 web.base.url=https://automationexercise.com
 api.base.url=https://automationexercise.com/api
+# chrome, edge or firefox
 browser=chrome
-# false: visible Chrome window (local runs); true: headless Chrome (Jenkins / CI)
+# false: visible browser window (local runs); true: headless browser (Jenkins / CI)
 remote=false
+# Empty: the browser starts on this machine. Set, e.g. http://localhost:4444: on Selenium Grid.
+grid.url=
 ```
 
-`remote` controls how Chrome runs. With `remote=false` (the default) the browser window opens, so you can watch every step. With `remote=true` Chrome runs headless at 1920×1080, with no window, as needed on Jenkins. Override it for one run with `-Dremote=true`, or with the `REMOTE` environment variable.
+`browser` chooses the browser for UI tests: `chrome` (default), `edge` or `firefox`. Selenium Manager downloads the matching driver, and also Firefox itself if it is not installed. Example: `./mvnw -B test -Dbrowser=edge`.
+
+`remote` controls how a local browser runs. With `remote=false` (the default) the browser window opens, so you can watch every step. With `remote=true` the browser runs headless at 1920×1080, with no window, as needed on Jenkins. Override it for one run with `-Dremote=true`, or with the `REMOTE` environment variable.
+
+`grid.url` sends UI tests to Selenium Grid (see *Local Tools (Docker)*), e.g. `./mvnw -B test -Dgrid.url=http://localhost:4444 -Dbrowser=firefox`. Grid browsers ignore `remote`: they always have a 1920×1080 screen, which you can watch live with noVNC.
+
+Every test prints a line to the console when it starts and when it ends, with its ID, name and time. A failed test also prints the error and the line in the test code where it failed:
+
+```
+[TEST] START   [TC-02] LoginTests > Should login successfully with valid credentials
+[TEST] FAILED  [TC-02] LoginTests > Should login successfully with valid credentials (12.6 s)
+    org.opentest4j.AssertionFailedError: [User should be logged in after submitting valid credentials]
+    at com.qa.automation.webui.LoginTests.shouldLoginSuccessfully(LoginTests.java:39)
+```
 
 Optional timeout overrides (seconds): `timeout.short` (default 5), `timeout.medium` (10), `timeout.long` (30).
 
@@ -152,7 +170,7 @@ If a required value is missing, the test fails with a message naming the key and
 
 - Java 21 (JDK) with `JAVA_HOME` set or `java` on `PATH`
 - No Maven installation needed: the Maven Wrapper downloads the pinned Maven version on first run
-- Google Chrome (Selenium Manager downloads the matching ChromeDriver automatically)
+- Google Chrome or Microsoft Edge (Selenium Manager downloads the matching driver automatically); Firefox is downloaded when needed
 - An Automation Exercise account for UI login tests
 
 ## Running Tests
@@ -237,7 +255,7 @@ In Jenkins, add the key once as a *Secret text* credential with the ID `rp-api-k
 
 ## Jenkins
 
-The `Jenkinsfile` in the repository root runs the suite with `REMOTE=true` (headless Chrome) in three stages: **Compile**, **API tests** and **UI tests**. Each test stage publishes its own JUnit results, and a failed test marks that stage and the build **UNSTABLE** without stopping the pipeline. At the end the pipeline publishes one Allure report for all tests and archives the failure screenshots. Install the **Pipeline Graph View** plugin to watch the stages live (*Pipeline Overview* on the build page). The file works on Windows (`mvnw.cmd`) and Linux (`./mvnw`) agents.
+The `Jenkinsfile` in the repository root runs the suite with `REMOTE=true` (headless browser) in three stages: **Compile**, **API tests** and **UI tests**. Each test stage publishes its own JUnit results, and a failed test marks that stage and the build **UNSTABLE** without stopping the pipeline. At the end the pipeline publishes one Allure report for all tests and archives the failure screenshots. Install the **Pipeline Graph View** plugin to watch the stages live (*Pipeline Overview* on the build page). The file works on Windows (`mvnw.cmd`) and Linux (`./mvnw`) agents.
 
 One-time Jenkins setup:
 
@@ -248,21 +266,34 @@ One-time Jenkins setup:
 5. *New Item → Pipeline*. In *Pipeline*, choose *Pipeline script from SCM → Git*, set the repository URL, branch `*/develop` and script path `Jenkinsfile`.
 6. *Build with Parameters* (*Build Now* before the first build). Each build then shows **Allure Report** and **Test Result** links.
 
-The **TEST_IDS** parameter chooses the tests. The default `ALL` (also `All` or `all`) runs every test, and an empty value does the same. To run selected tests, enter their IDs separated by commas, e.g. `TC-02, TC-04, API-07`. Case and spaces do not matter. A stage with none of the selected tests runs nothing and stays green. Jenkins reads the parameter definition during a build, so the parameter appears only after the first build that uses this `Jenkinsfile`.
+The **TEST_IDS** parameter chooses the tests. The default `ALL` (also `All` or `all`) runs every test, and an empty value does the same. To run selected tests, enter their IDs separated by commas, e.g. `TC-02, TC-04, API-07`. Case and spaces do not matter. A stage with none of the selected tests runs nothing and stays green. Jenkins reads the parameter definitions during a build, so a new parameter appears only after the first build that uses the changed `Jenkinsfile`.
 
-Chrome and JDK 21 must be installed on the Jenkins machine. The Jenkins Windows service has no desktop, which is why the pipeline runs Chrome headless.
+Other parameters:
+
+| Parameter | Values | What it does |
+| --- | --- | --- |
+| **SUITE** | `ALL`, `API`, `UI` | Which test stages run; the other stage is skipped. `TEST_IDS` still filters inside them. |
+| **BROWSER** | `chrome`, `edge`, `firefox` | Browser for the UI tests. |
+| **GRID** | on / off | Runs the UI tests on Selenium Grid at `http://localhost:4444` (start it first). Watch them live at http://localhost:7900 (Chrome), 7901 (Edge) or 7902 (Firefox). |
+| **REPORT_PORTAL** | on / off | Also sends results to ReportPortal (see *ReportPortal*). |
+
+The build history shows the chosen options next to each build number, e.g. `UI | firefox on Grid | ALL`. The *Console Output* lists every test with its result, as described in *Configuration*.
+
+JDK 21 must be installed on the Jenkins machine, and Chrome or Edge for local runs. The Jenkins Windows service has no desktop, so the pipeline runs a local browser headless; on Grid the browser has its own screen.
 
 ## Local Tools (Docker)
 
-The `docker/` folder holds Docker Compose files for two free, self-hosted tools. Both are based on the official files, with host ports changed so they do not clash with Jenkins (port 8080) or with each other. They need [Docker Desktop](https://www.docker.com/products/docker-desktop/) to be running.
+The `docker/` folder holds Docker Compose files for three free, self-hosted tools. Both are based on the official files, with host ports changed so they do not clash with Jenkins (port 8080) or with each other. They need [Docker Desktop](https://www.docker.com/products/docker-desktop/) to be running.
 
 | Tool | Purpose | Start (from the repository root) | URL |
 | --- | --- | --- | --- |
 | [Kiwi TCMS](https://kiwitcms.org) | test cases, test plans, test runs | `docker compose -f docker/kiwitcms/docker-compose.yml -p kiwitcms up -d` | https://localhost:8443 |
 | [ReportPortal](https://reportportal.io) | test run reports and failure analysis | `docker compose -f docker/reportportal/docker-compose.yml -p reportportal up -d` | http://localhost:8090 |
+| [Selenium Grid](https://www.selenium.dev/documentation/grid/) | Chrome, Edge and Firefox in containers, with a live view | `docker compose -f docker/selenium-grid/docker-compose.yml -p selenium-grid up -d` | http://localhost:4444 |
 
 - Kiwi TCMS, first run only: `docker exec -it kiwi_web /Kiwi/manage.py initial_setup` creates the database and the admin account. The browser warns about the self-signed certificate; accept it.
 - ReportPortal: the first start downloads several GB of images and takes a few minutes. Log in as `superadmin` with the initial password from the compose file and change it right away.
+- Selenium Grid: each browser runs one test at a time. To watch a test, open http://localhost:7900 (Chrome), 7901 (Edge) or 7902 (Firefox) and click *Connect*, or click the camera icon next to a session at http://localhost:4444. The ports are open only on this computer, so there is no VNC password. Safari is not available: it runs only on macOS.
 - Stop with the same command, replacing `up -d` with `stop`; data is kept in Docker volumes. Passwords can be overridden in a git-ignored `.env` file next to each compose file.
 
 ## Agent-Assisted Run and Heal
@@ -295,7 +326,11 @@ Java sources follow [Google Java Style](https://google.github.io/styleguide/java
 - [x] UI: successful login
 - [x] UI: login with invalid credentials (parameterised) and logout
 - [x] Screenshot and page HTML on UI test failure
-- [x] Headless Chrome switch (`remote`) for Jenkins / CI
+- [x] Headless browser switch (`remote`) for Jenkins / CI
+- [x] Browser selection (`browser`: Chrome, Edge, Firefox)
+- [x] Selenium Grid in Docker with a live view (noVNC), `grid.url` setting
+- [x] Jenkins parameters: SUITE, BROWSER, GRID, REPORT_PORTAL
+- [x] Test progress and errors in the console (Jenkins Console Output)
 - [x] Jenkins pipeline (`Jenkinsfile`) with JUnit and Allure reports
 - [x] API: products list
 - [x] API: `verifyLogin` positive and negative cases
@@ -311,10 +346,9 @@ Java sources follow [Google Java Style](https://google.github.io/styleguide/java
 - [ ] API: brands, product search
 - [ ] API: full account lifecycle – create, get, update, delete
 - [ ] Hybrid tests: create the user via API, verify in UI, clean up via API
-- [ ] Browser selection from the `browser` setting in `DriverFactory`
 - [ ] JUnit tags (`smoke`, `regression`) and parallel execution
 - [ ] GitHub Actions pipeline
-- [ ] ReportPortal: send results from Jenkins, REST Assured request/response logs
+- [ ] ReportPortal: REST Assured request/response logs
 - [ ] Link test IDs with test cases in Kiwi TCMS
 
 ## Author

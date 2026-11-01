@@ -1,0 +1,49 @@
+# Selenium Grid – Chrome, Edge and Firefox in Docker, with a live view of each browser (noVNC).
+# Based on https://github.com/SeleniumHQ/docker-selenium (docker-compose-v3.yml).
+# Ports are bound to 127.0.0.1, so the Grid and the browser view are reachable only from this
+# computer. That is why the noVNC password is turned off.
+#
+# Start:  docker compose -f docker/selenium-grid/docker-compose.yml -p selenium-grid up -d
+# Grid:   http://localhost:4444  (sessions; the camera icon opens the live view)
+# noVNC:  http://localhost:7900 (Chrome), :7901 (Edge), :7902 (Firefox) – click Connect
+# Tests:  ./mvnw -B test -Dgrid.url=http://localhost:4444 -Dbrowser=edge
+x-node: &node
+    depends_on:
+        - selenium-hub
+    shm_size: 2gb
+    restart: unless-stopped
+    environment: &node-env
+        SE_EVENT_BUS_HOST: selenium-hub
+        SE_EVENT_BUS_PUBLISH_PORT: 4442
+        SE_EVENT_BUS_SUBSCRIBE_PORT: 4443
+        SE_NODE_MAX_SESSIONS: 1
+        SE_SCREEN_WIDTH: 1920
+        SE_SCREEN_HEIGHT: 1080
+        SE_VNC_NO_PASSWORD: "true"
+
+services:
+    selenium-hub:
+        image: selenium/hub:4.51.0-20261010
+        restart: unless-stopped
+        ports:
+            - 127.0.0.1:4442:4442
+            - 127.0.0.1:4443:4443
+            - 127.0.0.1:4444:4444
+
+    chrome:
+        <<: *node
+        image: selenium/node-chrome:4.51.0-20261010
+        ports:
+            - 127.0.0.1:7900:7900
+
+    edge:
+        <<: *node
+        image: selenium/node-edge:4.51.0-20261010
+        ports:
+            - 127.0.0.1:7901:7900
+
+    firefox:
+        <<: *node
+        image: selenium/node-firefox:4.51.0-20261010
+        ports:
+            - 127.0.0.1:7902:7900
