@@ -18,7 +18,11 @@ public abstract class BaseWebTests {
   protected void setUp() {
     driver = DriverManager.startDriver();
     driver.get(Config.get("web.base.url"));
-    new CookieBanner(driver).acceptCookiesIfPresent();
+    // The consent banner comes from the same Google script as the ads. With block.ads=true it
+    // never appears, so waiting for it would only add 5 seconds to every test.
+    if (!Boolean.parseBoolean(Config.get("block.ads"))) {
+      new CookieBanner(driver).acceptCookiesIfPresent();
+    }
   }
 
   @AfterEach

@@ -25,11 +25,13 @@ def testIdsFilter() {
 // With TEST_IDS set, a stage that has none of the selected tests runs nothing and stays green.
 // With REPORT_PORTAL checked, results also go to ReportPortal as one launch per stage, tagged
 // with the build number and the stage name. The agent reads the key from RP_API_KEY.
-// extraArgs come only from choice and boolean parameters, so they are safe in a shell.
+// THREADS and extraArgs come only from choice and boolean parameters, so they are safe in a shell.
 def runTests(String filter, String stageName, String extraArgs = '') {
   String ids = testIdsFilter()
   String groups = ids ? " -Dgroups=${ids}" : ''
-  String args = "test -Dtest=\"${filter}\"${groups} -Dmaven.test.failure.ignore=true${extraArgs}"
+  String threads = " -Dthreads=${params.THREADS ?: '1'}"
+  String args =
+      "test -Dtest=\"${filter}\"${groups}${threads} -Dmaven.test.failure.ignore=true${extraArgs}"
   if (params.REPORT_PORTAL) {
     withCredentials([string(credentialsId: 'rp-api-key', variable: 'RP_API_KEY')]) {
       String attributes = "build:${env.BUILD_NUMBER};stage:${stageName}"
@@ -73,9 +75,15 @@ pipeline {
         choices: ['ALL', 'API', 'UI'],
         description: 'Which test stages run. TEST_IDS still filters the tests inside them.')
     choice(
+        name: 'THREADS',
+        choices: ['1', '2', '3', '4'],
+        description: 'How many tests run at the same time, each in its own browser. '
+            + 'On Grid each browser node takes up to 3.')
+    choice(
         name: 'BROWSER',
-        choices: ['chrome', 'edge', 'firefox'],
-        description: 'Browser for the UI tests.')
+        choices: ['chrome', 'edge', 'firefox', 'chrome-mobile'],
+        description: 'Browser for the UI tests. chrome-mobile: Chrome emulating a phone screen '
+            + '(Pixel 7), to check the mobile layout.')
     booleanParam(
         name: 'GRID',
         defaultValue: false,
@@ -110,7 +118,8 @@ pipeline {
           // Shown next to the build number in the build history.
           String where = params.GRID ? ' on Grid' : ''
           String ids = params.TEST_IDS ?: 'ALL'
-          currentBuild.description = "${suite()} | ${browser()}${where} | ${ids}"
+          String threads = params.THREADS ?: '1'
+          currentBuild.description = "${suite()} | ${browser()}${where} | ${threads}x | ${ids}"
         }
         mvnw('clean test-compile')
       }

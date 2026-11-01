@@ -46,7 +46,7 @@ automation-exercise-tests
     │   │   │   ├── Config.java               # layered configuration loader
     │   │   │   └── Timeouts.java             # SHORT / MEDIUM / LONG wait durations
     │   │   ├── driver
-    │   │   │   ├── DriverFactory.java        # creates Chrome, Edge or Firefox, locally or on Selenium Grid
+    │   │   │   ├── DriverFactory.java        # creates Chrome, Edge, Firefox or mobile Chrome, locally or on Grid; blocks ads
     │   │   │   └── DriverManager.java        # holds the current test's WebDriver
     │   │   ├── extensions
     │   │   │   ├── ConsoleProgressExtension.java # prints each test's start, result, time and error to the console
@@ -99,7 +99,7 @@ Each test has a unique ID, a JUnit `@Tag` that matches the scenario number on th
 
 **Page Object Model.** Page classes hold locators and page actions, so tests read as business scenarios. Pages extend `BasePage`, which wraps every interaction in an explicit wait (`WebDriverWait` + `ExpectedConditions`); there are no `Thread.sleep` calls.
 
-**Base test.** UI tests extend `BaseWebTests`, which before each test creates a fresh WebDriver, opens `web.base.url` and accepts the cookie banner, and after each test quits the driver. Every test gets its own browser session, so tests stay independent.
+**Base test.** UI tests extend `BaseWebTests`, which before each test creates a fresh WebDriver, opens `web.base.url` and accepts the cookie banner (only when ads are not blocked, see `block.ads`), and after each test quits the driver. Every test gets its own browser session, so tests stay independent.
 
 **Failure artifacts.** `BaseWebTests` registers `ScreenshotOnFailureExtension`. When a UI test fails, the extension saves a screenshot (`.png`) and the page HTML (`.html`) to `target/screenshots/` while the browser is still open. It also prints the current URL and both file paths to the console, and attaches the screenshot and HTML to the Allure report. Screenshots can show the test account's email address, so treat them as sensitive when sharing build artifacts.
 
@@ -121,17 +121,25 @@ Each test has a unique ID, a JUnit `@Tag` that matches the scenario number on th
 ```properties
 web.base.url=https://automationexercise.com
 api.base.url=https://automationexercise.com/api
-# chrome, edge or firefox
+# chrome, edge, firefox or chrome-mobile (Chrome emulating a phone screen)
 browser=chrome
 # false: visible browser window (local runs); true: headless browser (Jenkins / CI)
 remote=false
 # Empty: the browser starts on this machine. Set, e.g. http://localhost:4444: on Selenium Grid.
 grid.url=
+# true: the browser cannot reach ad networks, whose full-screen ads cover the page and block clicks
+block.ads=true
 ```
 
-`browser` chooses the browser for UI tests: `chrome` (default), `edge` or `firefox`. Selenium Manager downloads the matching driver, and also Firefox itself if it is not installed. Example: `./mvnw -B test -Dbrowser=edge`.
+`browser` chooses the browser for UI tests: `chrome` (default), `edge`, `firefox` or `chrome-mobile`. Selenium Manager downloads the matching driver, and also Firefox itself if it is not installed. Example: `./mvnw -B test -Dbrowser=edge`.
+
+`chrome-mobile` is Chrome emulating a phone: a Pixel 7 screen (412×915), touch and an Android user agent, so the site serves its mobile layout. It checks how pages look and work on a small screen, but it is still desktop Chrome, not a real phone browser. Safari (iPhone) cannot be tested here, because it runs only on macOS.
 
 `remote` controls how a local browser runs. With `remote=false` (the default) the browser window opens, so you can watch every step. With `remote=true` the browser runs headless at 1920×1080, with no window, as needed on Jenkins. Override it for one run with `-Dremote=true`, or with the `REMOTE` environment variable.
+
+`block.ads` (default `true`) stops the browser from reaching the site's ad networks (`googlesyndication.com`, `doubleclick.net`, `googleadservices.com`, `adtrafficquality.google`). Their full-screen ads (`#google_vignette` in the URL) cover the page and swallow clicks, which made tests fail at random, most often on Grid and in `chrome-mobile`. Chrome and Edge resolve these domains to "not found"; Firefox gets a proxy auto-config (PAC) script that sends them to a closed local port. Both work locally and on Grid. The Google consent (cookie) banner is loaded by the same script, so with blocked ads it does not appear and `BaseWebTests` skips it. Use `-Dblock.ads=false` to see the site as a real visitor does.
+
+`threads` (Maven property, default `1`) sets how many tests run at the same time, e.g. `./mvnw -B test -Dthreads=3`. JUnit runs classes and methods in parallel, and each test still gets its own browser: `DriverManager` keeps one WebDriver per thread in a `ThreadLocal`. The setting lives in the Surefire configuration in `pom.xml`, so runs from IntelliJ IDEA stay sequential. On Selenium Grid each browser node takes up to 3 tests at once.
 
 `grid.url` sends UI tests to Selenium Grid (see *Local Tools (Docker)*), e.g. `./mvnw -B test -Dgrid.url=http://localhost:4444 -Dbrowser=firefox`. Grid browsers ignore `remote`: they always have a 1920×1080 screen, which you can watch live with noVNC.
 
@@ -273,11 +281,12 @@ Other parameters:
 | Parameter | Values | What it does |
 | --- | --- | --- |
 | **SUITE** | `ALL`, `API`, `UI` | Which test stages run; the other stage is skipped. `TEST_IDS` still filters inside them. |
-| **BROWSER** | `chrome`, `edge`, `firefox` | Browser for the UI tests. |
+| **THREADS** | `1`–`4` | How many tests run at the same time (`-Dthreads`). |
+| **BROWSER** | `chrome`, `edge`, `firefox`, `chrome-mobile` | Browser for the UI tests; `chrome-mobile` emulates a phone screen. |
 | **GRID** | on / off | Runs the UI tests on Selenium Grid at `http://localhost:4444` (start it first). Watch them live at http://localhost:7900 (Chrome), 7901 (Edge) or 7902 (Firefox). |
 | **REPORT_PORTAL** | on / off | Also sends results to ReportPortal (see *ReportPortal*). |
 
-The build history shows the chosen options next to each build number, e.g. `UI | firefox on Grid | ALL`. The *Console Output* lists every test with its result, as described in *Configuration*.
+The build history shows the chosen options next to each build number, e.g. `UI | firefox on Grid | 3x | ALL`. The *Console Output* lists every test with its result, as described in *Configuration*.
 
 JDK 21 must be installed on the Jenkins machine, and Chrome or Edge for local runs. The Jenkins Windows service has no desktop, so the pipeline runs a local browser headless; on Grid the browser has its own screen.
 
@@ -293,7 +302,7 @@ The `docker/` folder holds Docker Compose files for three free, self-hosted tool
 
 - Kiwi TCMS, first run only: `docker exec -it kiwi_web /Kiwi/manage.py initial_setup` creates the database and the admin account. The browser warns about the self-signed certificate; accept it.
 - ReportPortal: the first start downloads several GB of images and takes a few minutes. Log in as `superadmin` with the initial password from the compose file and change it right away.
-- Selenium Grid: each browser runs one test at a time. To watch a test, open http://localhost:7900 (Chrome), 7901 (Edge) or 7902 (Firefox) and click *Connect*, or click the camera icon next to a session at http://localhost:4444. The ports are open only on this computer, so there is no VNC password. Safari is not available: it runs only on macOS.
+- Selenium Grid: each browser node runs up to 3 tests at once (`SE_NODE_MAX_SESSIONS`). To watch a test, open http://localhost:7900 (Chrome), 7901 (Edge) or 7902 (Firefox) and click *Connect*, or click the camera icon next to a session at http://localhost:4444. The ports are open only on this computer, so there is no VNC password. Safari is not available: it runs only on macOS.
 - Stop with the same command, replacing `up -d` with `stop`; data is kept in Docker volumes. Passwords can be overridden in a git-ignored `.env` file next to each compose file.
 
 ## Agent-Assisted Run and Heal
@@ -327,10 +336,12 @@ Java sources follow [Google Java Style](https://google.github.io/styleguide/java
 - [x] UI: login with invalid credentials (parameterised) and logout
 - [x] Screenshot and page HTML on UI test failure
 - [x] Headless browser switch (`remote`) for Jenkins / CI
-- [x] Browser selection (`browser`: Chrome, Edge, Firefox)
+- [x] Browser selection (`browser`: Chrome, Edge, Firefox, mobile emulation in Chrome)
 - [x] Selenium Grid in Docker with a live view (noVNC), `grid.url` setting
 - [x] Jenkins parameters: SUITE, BROWSER, GRID, REPORT_PORTAL
 - [x] Test progress and errors in the console (Jenkins Console Output)
+- [x] Parallel execution (`-Dthreads`, Jenkins THREADS parameter)
+- [x] Ad blocking (`block.ads`) against full-screen ads that swallow clicks
 - [x] Jenkins pipeline (`Jenkinsfile`) with JUnit and Allure reports
 - [x] API: products list
 - [x] API: `verifyLogin` positive and negative cases
@@ -346,7 +357,7 @@ Java sources follow [Google Java Style](https://google.github.io/styleguide/java
 - [ ] API: brands, product search
 - [ ] API: full account lifecycle – create, get, update, delete
 - [ ] Hybrid tests: create the user via API, verify in UI, clean up via API
-- [ ] JUnit tags (`smoke`, `regression`) and parallel execution
+- [ ] JUnit tags (`smoke`, `regression`)
 - [ ] GitHub Actions pipeline
 - [ ] ReportPortal: REST Assured request/response logs
 - [ ] Link test IDs with test cases in Kiwi TCMS
