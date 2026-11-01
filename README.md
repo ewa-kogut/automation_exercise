@@ -26,7 +26,7 @@ automation-exercise-tests
 ├── .mvn/wrapper
 │   └── maven-wrapper.properties          # pins the Maven version used by mvnw
 ├── mvnw / mvnw.cmd                       # Maven Wrapper scripts (Unix / Windows)
-├── Jenkinsfile                           # Jenkins pipeline: headless run, JUnit + Allure reports
+├── Jenkinsfile                           # Jenkins pipeline: compile, API and UI stages, JUnit + Allure reports
 ├── pom.xml
 ├── README.md
 └── src
@@ -202,7 +202,7 @@ On the first run, `allure-maven` downloads a private Node.js runtime and Allure 
 
 ## Jenkins
 
-The `Jenkinsfile` in the repository root runs the whole suite with `REMOTE=true` (headless Chrome) and publishes the JUnit results, the Allure report and the failure screenshots. Failed tests mark the build **UNSTABLE**, so the reports are still published. The file works on Windows (`mvnw.cmd`) and Linux (`./mvnw`) agents.
+The `Jenkinsfile` in the repository root runs the suite with `REMOTE=true` (headless Chrome) in three stages: **Compile**, **API tests** and **UI tests**. Each test stage publishes its own JUnit results, and a failed test marks that stage and the build **UNSTABLE** without stopping the pipeline. At the end the pipeline publishes one Allure report for all tests and archives the failure screenshots. Install the **Pipeline Graph View** plugin to watch the stages live (*Pipeline Overview* on the build page). The file works on Windows (`mvnw.cmd`) and Linux (`./mvnw`) agents.
 
 One-time Jenkins setup:
 

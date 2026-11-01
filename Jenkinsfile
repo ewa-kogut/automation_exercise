@@ -1,5 +1,20 @@
-// Runs the whole suite and publishes JUnit and Allure results.
+// Compiles, runs API and UI tests as separate stages, then publishes JUnit and Allure results.
 // Jenkins setup is described in README.md, section "Jenkins".
+
+// Runs the Maven Wrapper on Linux and Windows agents.
+def mvnw(String args) {
+  if (isUnix()) {
+    sh "./mvnw -B ${args}"
+  } else {
+    bat "mvnw.cmd -B ${args}"
+  }
+}
+
+// Failed tests must not stop the pipeline: the junit step marks the stage and the build UNSTABLE.
+def runTests(String filter) {
+  mvnw("test -Dtest=\"${filter}\" -Dmaven.test.failure.ignore=true")
+}
+
 pipeline {
   agent any
 
@@ -17,16 +32,32 @@ pipeline {
   }
 
   stages {
-    stage('Test') {
+    stage('Compile') {
       steps {
-        script {
-          // Failed tests mark the build UNSTABLE (via junit below) instead of stopping the pipeline.
-          def mvn = 'clean test -B -Dmaven.test.failure.ignore=true'
-          if (isUnix()) {
-            sh "./mvnw ${mvn}"
-          } else {
-            bat "mvnw.cmd ${mvn}"
-          }
+        mvnw('clean test-compile')
+      }
+    }
+
+    stage('API tests') {
+      steps {
+        runTests('com.qa.automation.api.**')
+      }
+      post {
+        always {
+          junit testResults: 'target/surefire-reports/TEST-com.qa.automation.api.*.xml',
+              allowEmptyResults: true
+        }
+      }
+    }
+
+    stage('UI tests') {
+      steps {
+        runTests('com.qa.automation.webui.**')
+      }
+      post {
+        always {
+          junit testResults: 'target/surefire-reports/TEST-com.qa.automation.webui.*.xml',
+              allowEmptyResults: true
         }
       }
     }
@@ -34,7 +65,7 @@ pipeline {
 
   post {
     always {
-      junit testResults: 'target/surefire-reports/*.xml', allowEmptyResults: true
+      // One Allure report for both stages: results accumulate in target/allure-results.
       allure results: [[path: 'target/allure-results']]
       archiveArtifacts artifacts: 'target/screenshots/**', allowEmptyArchive: true
     }
