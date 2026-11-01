@@ -14,6 +14,7 @@ UI and API test automation framework for [Automation Exercise](https://automatio
 | Test runner | JUnit 5 (Jupiter) | 5.12.2 |
 | Assertions | AssertJ | 3.26.3 |
 | Reporting | Allure Report (allure-jupiter, allure-rest-assured, allure-maven) | 2.35.5 / plugin 3.1.0 |
+| Reporting | ReportPortal JUnit 5 agent (agent-java-junit5), optional | 5.5.8 |
 | Design pattern | Page Object Model | – |
 | Code style | google-java-format | – |
 
@@ -25,6 +26,9 @@ automation-exercise-tests
 │   └── SKILL.md                          # Claude Code skill: run tests, fix failures, re-run
 ├── .mvn/wrapper
 │   └── maven-wrapper.properties          # pins the Maven version used by mvnw
+├── docker
+│   ├── kiwitcms/docker-compose.yml       # local Kiwi TCMS (test case management)
+│   └── reportportal/docker-compose.yml   # local ReportPortal (test run reporting)
 ├── mvnw / mvnw.cmd                       # Maven Wrapper scripts (Unix / Windows)
 ├── Jenkinsfile                           # Jenkins pipeline: compile, API and UI stages, JUnit + Allure reports
 ├── pom.xml
@@ -44,7 +48,7 @@ automation-exercise-tests
     │   │   │   ├── DriverFactory.java        # creates the WebDriver instance
     │   │   │   └── DriverManager.java        # holds the current test's WebDriver
     │   │   ├── extensions
-    │   │   │   └── ScreenshotOnFailureExtension.java # on UI failure: screenshot + HTML to target/screenshots and Allure
+    │   │   │   └── ScreenshotOnFailureExtension.java # on UI failure: screenshot + HTML to target/screenshots, Allure, ReportPortal
     │   │   └── pages
     │   │       ├── BasePage.java             # explicit-wait helpers: click, type, getText, isVisible, isNotVisible
     │   │       ├── HomePage.java
@@ -66,7 +70,11 @@ automation-exercise-tests
         │       ├── BaseWebTests.java         # driver setup/teardown, opens app, accepts cookies
         │       └── LoginTests.java
         └── resources
-            └── allure.properties             # writes Allure results to target/allure-results
+            ├── META-INF/services/...Extension # registers the ReportPortal JUnit 5 agent
+            ├── allure.properties             # writes Allure results to target/allure-results
+            ├── junit-platform.properties     # turns on JUnit extension auto-detection
+            ├── reportportal.properties       # ReportPortal endpoint, project, launch; off by default
+            └── simplelogger.properties       # SLF4J: show only warnings and errors
 ```
 
 ## Current Test Coverage
@@ -211,6 +219,22 @@ Build the HTML report after a test run:
 
 On the first run, `allure-maven` downloads a private Node.js runtime and Allure 3 into `.allure/` (git-ignored). No global Node.js or Allure installation is needed. Use `allure:serve` to view the report locally: opening `index.html` straight from disk may show an empty page in some browsers.
 
+## ReportPortal
+
+Test results can also be sent to [ReportPortal](https://reportportal.io), which is free and open source. It keeps the history of launches, groups failures by cause and shows the screenshot and page HTML of failed UI tests. Start it locally first (see *Local Tools (Docker)*).
+
+Sending is **off by default** (`rp.enable=false` in `src/test/resources/reportportal.properties`), so a run without ReportPortal works as before. To turn it on:
+
+1. In ReportPortal (http://localhost:8090) open *Profile → API Keys* and generate a key.
+2. Set two environment variables for your Windows account (*Start → "Edit environment variables for your account"*), then restart IntelliJ IDEA or the terminal:
+   - `RP_ENABLE` = `true`
+   - `RP_API_KEY` = the generated key
+3. Run the tests as usual. Each Maven run creates one launch named `automation-exercise` in the `superadmin_personal` project.
+
+Every setting in `reportportal.properties` can be overridden with `-D<key>` or an environment variable (`rp.project` → `RP_PROJECT`). The API key is a secret: keep it in the environment variable, never in a file in the repository. With `RP_ENABLE=true` but no key, the run stops at once with `Neither OAuth 2.0 nor API key authentication is configured`. The agent's anonymous usage statistics are turned off in `pom.xml` (`AGENT_NO_ANALYTICS`).
+
+In Jenkins, add the key once as a *Secret text* credential with the ID `rp-api-key`, then tick **REPORT_PORTAL** in *Build with Parameters*. Each test stage creates its own launch with the attributes `build:<number>` and `stage:api` or `stage:ui`.
+
 ## Jenkins
 
 The `Jenkinsfile` in the repository root runs the suite with `REMOTE=true` (headless Chrome) in three stages: **Compile**, **API tests** and **UI tests**. Each test stage publishes its own JUnit results, and a failed test marks that stage and the build **UNSTABLE** without stopping the pipeline. At the end the pipeline publishes one Allure report for all tests and archives the failure screenshots. Install the **Pipeline Graph View** plugin to watch the stages live (*Pipeline Overview* on the build page). The file works on Windows (`mvnw.cmd`) and Linux (`./mvnw`) agents.
@@ -227,6 +251,19 @@ One-time Jenkins setup:
 The **TEST_IDS** parameter chooses the tests. The default `ALL` (also `All` or `all`) runs every test, and an empty value does the same. To run selected tests, enter their IDs separated by commas, e.g. `TC-02, TC-04, API-07`. Case and spaces do not matter. A stage with none of the selected tests runs nothing and stays green. Jenkins reads the parameter definition during a build, so the parameter appears only after the first build that uses this `Jenkinsfile`.
 
 Chrome and JDK 21 must be installed on the Jenkins machine. The Jenkins Windows service has no desktop, which is why the pipeline runs Chrome headless.
+
+## Local Tools (Docker)
+
+The `docker/` folder holds Docker Compose files for two free, self-hosted tools. Both are based on the official files, with host ports changed so they do not clash with Jenkins (port 8080) or with each other. They need [Docker Desktop](https://www.docker.com/products/docker-desktop/) to be running.
+
+| Tool | Purpose | Start (from the repository root) | URL |
+| --- | --- | --- | --- |
+| [Kiwi TCMS](https://kiwitcms.org) | test cases, test plans, test runs | `docker compose -f docker/kiwitcms/docker-compose.yml -p kiwitcms up -d` | https://localhost:8443 |
+| [ReportPortal](https://reportportal.io) | test run reports and failure analysis | `docker compose -f docker/reportportal/docker-compose.yml -p reportportal up -d` | http://localhost:8090 |
+
+- Kiwi TCMS, first run only: `docker exec -it kiwi_web /Kiwi/manage.py initial_setup` creates the database and the admin account. The browser warns about the self-signed certificate; accept it.
+- ReportPortal: the first start downloads several GB of images and takes a few minutes. Log in as `superadmin` with the initial password from the compose file and change it right away.
+- Stop with the same command, replacing `up -d` with `stop`; data is kept in Docker volumes. Passwords can be overridden in a git-ignored `.env` file next to each compose file.
 
 ## Agent-Assisted Run and Heal
 
@@ -263,6 +300,8 @@ Java sources follow [Google Java Style](https://google.github.io/styleguide/java
 - [x] API: products list
 - [x] API: `verifyLogin` positive and negative cases
 - [x] Allure reporting with API request/response logs and failure screenshots
+- [x] Docker Compose files for local Kiwi TCMS and ReportPortal
+- [x] Optional ReportPortal reporting (JUnit 5 agent) with failure screenshots
 
 **Next**
 
@@ -275,6 +314,8 @@ Java sources follow [Google Java Style](https://google.github.io/styleguide/java
 - [ ] Browser selection from the `browser` setting in `DriverFactory`
 - [ ] JUnit tags (`smoke`, `regression`) and parallel execution
 - [ ] GitHub Actions pipeline
+- [ ] ReportPortal: send results from Jenkins, REST Assured request/response logs
+- [ ] Link test IDs with test cases in Kiwi TCMS
 
 ## Author
 

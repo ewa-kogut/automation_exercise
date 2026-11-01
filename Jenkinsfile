@@ -23,10 +23,20 @@ def testIdsFilter() {
 
 // Failed tests must not stop the pipeline: the junit step marks the stage and the build UNSTABLE.
 // With TEST_IDS set, a stage that has none of the selected tests runs nothing and stays green.
-def runTests(String filter) {
+// With REPORT_PORTAL checked, results also go to ReportPortal as one launch per stage, tagged
+// with the build number and the stage name. The agent reads the key from RP_API_KEY.
+def runTests(String filter, String stageName) {
   String ids = testIdsFilter()
   String groups = ids ? " -Dgroups=${ids}" : ''
-  mvnw("test -Dtest=\"${filter}\"${groups} -Dmaven.test.failure.ignore=true")
+  String args = "test -Dtest=\"${filter}\"${groups} -Dmaven.test.failure.ignore=true"
+  if (params.REPORT_PORTAL) {
+    withCredentials([string(credentialsId: 'rp-api-key', variable: 'RP_API_KEY')]) {
+      String attributes = "build:${env.BUILD_NUMBER};stage:${stageName}"
+      mvnw("${args} -Drp.enable=true \"-Drp.attributes=${attributes}\"")
+    }
+  } else {
+    mvnw(args)
+  }
 }
 
 pipeline {
@@ -39,6 +49,11 @@ pipeline {
         trim: true,
         description: 'ALL runs every test. To run selected tests, enter their IDs separated by '
             + 'commas, e.g. TC-02,TC-04,API-07. IDs are listed in README.md.')
+    booleanParam(
+        name: 'REPORT_PORTAL',
+        defaultValue: false,
+        description: 'Also send results to ReportPortal (http://localhost:8090). '
+            + 'Needs the Secret text credential rp-api-key.')
   }
 
   options {
@@ -63,7 +78,7 @@ pipeline {
 
     stage('API tests') {
       steps {
-        runTests('com.qa.automation.api.**')
+        runTests('com.qa.automation.api.**', 'api')
       }
       post {
         always {
@@ -75,7 +90,7 @@ pipeline {
 
     stage('UI tests') {
       steps {
-        runTests('com.qa.automation.webui.**')
+        runTests('com.qa.automation.webui.**', 'ui')
       }
       post {
         always {

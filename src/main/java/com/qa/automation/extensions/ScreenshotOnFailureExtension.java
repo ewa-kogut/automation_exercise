@@ -1,5 +1,6 @@
 package com.qa.automation.extensions;
 
+import com.epam.reportportal.service.ReportPortal;
 import com.qa.automation.driver.DriverManager;
 import io.qameta.allure.Allure;
 import java.io.ByteArrayInputStream;
@@ -9,6 +10,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Date;
 import java.util.Optional;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.TestExecutionExceptionHandler;
@@ -21,7 +23,7 @@ import org.openqa.selenium.WebDriver;
  *
  * <p>Runs before {@code @AfterEach}, so the browser is still open. The driver comes from {@link
  * DriverManager}. Files go to {@code target/screenshots}, and both are also attached to the Allure
- * report.
+ * report and, when the ReportPortal agent is enabled, logged to the ReportPortal test item.
  */
 public class ScreenshotOnFailureExtension implements TestExecutionExceptionHandler {
 
@@ -58,6 +60,12 @@ public class ScreenshotOnFailureExtension implements TestExecutionExceptionHandl
     Allure.addAttachment(
         "Screenshot", "image/png", new ByteArrayInputStream(screenshotBytes), "png");
     Allure.addAttachment("Page source", "text/html", html, "html");
+
+    // Does nothing when ReportPortal is disabled (rp.enable=false).
+    Date now = new Date();
+    String url = driver.getCurrentUrl();
+    ReportPortal.emitLog("Screenshot: " + url, "ERROR", now, screenshot.toFile());
+    ReportPortal.emitLog("Page source", "ERROR", now, pageSource.toFile());
 
     System.out.printf(
         "Test failed at %s%n  screenshot: %s%n  page source: %s%n",
