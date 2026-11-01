@@ -9,7 +9,7 @@ UI and API test automation framework for [Automation Exercise](https://automatio
 | Language | Java | 21 |
 | Build | Maven (via Maven Wrapper) | 3.9.9 |
 | Test execution | Maven Surefire | 3.5.2 |
-| UI automation | Selenium WebDriver | 4.50.0 |
+| UI automation | Selenium WebDriver | 4.52.0 |
 | API automation | REST Assured | 5.5.6 |
 | Test runner | JUnit 5 (Jupiter) | 5.12.2 |
 | Assertions | AssertJ | 3.26.3 |
