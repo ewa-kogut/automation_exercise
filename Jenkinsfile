@@ -10,13 +10,36 @@ def mvnw(String args) {
   }
 }
 
+// Turns the TEST_IDS parameter ("TC-02, api-07") into a JUnit tag filter ("TC-02,API-07").
+// ALL (any case) or an empty value means all tests and returns ''.
+// Only letters, digits, hyphens and commas are allowed, so the value is safe in a shell.
+def testIdsFilter() {
+  String ids = (params.TEST_IDS ?: '').replaceAll(/\s/, '').toUpperCase()
+  if (!(ids ==~ /[A-Z0-9,-]*/)) {
+    error("TEST_IDS: use ALL or test IDs separated by commas, e.g. TC-02,API-07. Got: ${params.TEST_IDS}")
+  }
+  return (ids ==~ /(.*,)?ALL(,.*)?/) ? '' : ids
+}
+
 // Failed tests must not stop the pipeline: the junit step marks the stage and the build UNSTABLE.
+// With TEST_IDS set, a stage that has none of the selected tests runs nothing and stays green.
 def runTests(String filter) {
-  mvnw("test -Dtest=\"${filter}\" -Dmaven.test.failure.ignore=true")
+  String ids = testIdsFilter()
+  String groups = ids ? " -Dgroups=${ids}" : ''
+  mvnw("test -Dtest=\"${filter}\"${groups} -Dmaven.test.failure.ignore=true")
 }
 
 pipeline {
   agent any
+
+  parameters {
+    string(
+        name: 'TEST_IDS',
+        defaultValue: 'ALL',
+        trim: true,
+        description: 'ALL runs every test. To run selected tests, enter their IDs separated by '
+            + 'commas, e.g. TC-02,TC-04,API-07. IDs are listed in README.md.')
+  }
 
   options {
     timestamps()

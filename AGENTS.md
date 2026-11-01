@@ -18,6 +18,7 @@ Use the Maven Wrapper. Maven is not installed globally.
 | Whole suite | `./mvnw -B test` |
 | One class or method | `./mvnw -B test -Dtest=LoginTests` / `-Dtest=LoginTests#shouldLogoutSuccessfully` |
 | API tests only | `./mvnw -B test -Dtest="com.qa.automation.api.**"` |
+| Tests by ID | `./mvnw -B test -Dgroups=TC-02,API-07` |
 
 - Results are in `target/surefire-reports/`.
 - When a UI test fails, a screenshot and the page HTML are saved to `target/screenshots/`.
@@ -45,6 +46,7 @@ Use the Maven Wrapper. Maven is not installed globally.
 ### Tests
 - Every test has `// Arrange`, `// Act` and `// Assert` sections. If a section has nothing to do, keep the header with a short note, e.g. `// Arrange – no request data needed`.
 - Every test has a `@DisplayName`.
+- Every test has a unique ID as a JUnit `@Tag`, matching the scenario number on the site: `@Tag("TC-05")` for UI test case 5, `@Tag("API-11")` for API 11. Add the ID to the *Current Test Coverage* table in `README.md`. IDs are used by `-Dgroups=...` and the Jenkins `TEST_IDS` parameter.
 - Only classes that contain tests end with `Tests`. Base or helper classes must not use that suffix.
 - `@MethodSource` uses the short method name, never `"pkg.Class#method"`. If the data lives in another class, add a one-line static method in the test class that delegates to it.
 - Use AssertJ (`assertThat`) with `.as(...)` descriptions for boolean checks.

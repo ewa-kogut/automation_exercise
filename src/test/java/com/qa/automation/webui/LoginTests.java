@@ -8,6 +8,7 @@ import com.qa.automation.pages.HomePage;
 import com.qa.automation.pages.LoginPage;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -21,6 +22,7 @@ public class LoginTests extends BaseWebTests {
   }
 
   @Test
+  @Tag("TC-02")
   @DisplayName("Should login successfully with valid credentials")
   void shouldLoginSuccessfully() {
     // Arrange
@@ -39,6 +41,7 @@ public class LoginTests extends BaseWebTests {
 
   @ParameterizedTest(name = "{0}")
   @MethodSource("invalidCredentials")
+  @Tag("TC-03")
   @DisplayName("Should show an error for invalid credentials")
   void shouldShowErrorForInvalidCredentials(String scenario, String email, String password) {
     // Arrange
@@ -57,6 +60,7 @@ public class LoginTests extends BaseWebTests {
   }
 
   @Test
+  @Tag("TC-04")
   @DisplayName("Should logout and return to the login page")
   void shouldLogoutSuccessfully() {
     // Arrange

@@ -71,15 +71,19 @@ automation-exercise-tests
 
 ## Current Test Coverage
 
-| Layer | Test class | Scenario | Status |
-| --- | --- | --- | --- |
-| UI | `LoginTests` | Login with valid credentials shows "Logged in as" | Implemented |
-| UI | `LoginTests` | Invalid credentials show "Your email or password is incorrect!" – unknown email, wrong password, both (parameterised) | Implemented |
-| UI | `LoginTests` | Logout returns to the login page and hides "Logged in as" | Implemented |
-| API | `ProductsApiTests` | `GET /api/productsList` returns HTTP 200, `responseCode` 200 and a non-empty product list | Implemented |
-| API | `BrandsApiTests` | Brands list | Planned |
-| API | `LoginApiTests` | `POST /api/verifyLogin` – valid credentials (`200`), unknown user (`404`), missing email / password / both (`400`, parameterised) | Implemented |
-| API | `LoginApiTests` | `DELETE /api/verifyLogin` – method not supported (`405`) | Implemented |
+Each test has a unique ID, a JUnit `@Tag` that matches the scenario number on the site: `TC-nn` for [UI test cases](https://automationexercise.com/test_cases), `API-nn` for the [API list](https://automationexercise.com/api_list). Use IDs to run selected tests (see [Running Tests](#running-tests) and [Jenkins](#jenkins)).
+
+| ID | Layer | Test class | Scenario | Status |
+| --- | --- | --- | --- | --- |
+| `TC-02` | UI | `LoginTests` | Login with valid credentials shows "Logged in as" | Implemented |
+| `TC-03` | UI | `LoginTests` | Invalid credentials show "Your email or password is incorrect!" – unknown email, wrong password, both (parameterised) | Implemented |
+| `TC-04` | UI | `LoginTests` | Logout returns to the login page and hides "Logged in as" | Implemented |
+| `API-01` | API | `ProductsApiTests` | `GET /api/productsList` returns HTTP 200, `responseCode` 200 and a non-empty product list | Implemented |
+| `API-03` | API | `BrandsApiTests` | Brands list | Planned |
+| `API-07` | API | `LoginApiTests` | `POST /api/verifyLogin` – valid credentials (`200`) | Implemented |
+| `API-08` | API | `LoginApiTests` | `POST /api/verifyLogin` – missing email / password / both (`400`, parameterised) | Implemented |
+| `API-09` | API | `LoginApiTests` | `DELETE /api/verifyLogin` – method not supported (`405`) | Implemented |
+| `API-10` | API | `LoginApiTests` | `POST /api/verifyLogin` – unknown user (`404`) | Implemented |
 
 ## Framework Design
 
@@ -166,6 +170,13 @@ Run a single test class or method:
 ./mvnw test -Dtest=ProductsApiTests#shouldReturnProductsSuccessfully
 ```
 
+Run tests by ID (comma-separated, see [Current Test Coverage](#current-test-coverage)):
+
+```bash
+./mvnw test -Dgroups=TC-04
+./mvnw test -Dgroups=TC-02,TC-04,API-07
+```
+
 Run only API tests (no browser needed):
 
 ```bash
@@ -211,7 +222,9 @@ One-time Jenkins setup:
 3. *Manage Jenkins → Tools → Allure Commandline*: add an installation with *Install automatically*.
 4. *Manage Jenkins → Credentials*: add two *Secret text* credentials with IDs `test-user-email` and `test-user-password`.
 5. *New Item → Pipeline*. In *Pipeline*, choose *Pipeline script from SCM → Git*, set the repository URL, branch `*/develop` and script path `Jenkinsfile`.
-6. *Build Now*. Each build then shows **Allure Report** and **Test Result** links.
+6. *Build with Parameters* (*Build Now* before the first build). Each build then shows **Allure Report** and **Test Result** links.
+
+The **TEST_IDS** parameter chooses the tests. The default `ALL` (also `All` or `all`) runs every test, and an empty value does the same. To run selected tests, enter their IDs separated by commas, e.g. `TC-02, TC-04, API-07`. Case and spaces do not matter. A stage with none of the selected tests runs nothing and stays green. Jenkins reads the parameter definition during a build, so the parameter appears only after the first build that uses this `Jenkinsfile`.
 
 Chrome and JDK 21 must be installed on the Jenkins machine. The Jenkins Windows service has no desktop, which is why the pipeline runs Chrome headless.
 

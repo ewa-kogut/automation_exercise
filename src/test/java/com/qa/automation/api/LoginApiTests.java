@@ -9,6 +9,7 @@ import io.restassured.response.Response;
 import java.util.UUID;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -22,6 +23,7 @@ class LoginApiTests {
   private final LoginApiClient loginApiClient = new LoginApiClient(Config.get("api.base.url"));
 
   @Test
+  @Tag("API-07")
   @DisplayName("POST /verifyLogin - valid credentials return 'User exists!'")
   void shouldVerifyLoginWithValidCredentials() {
     // Arrange
@@ -36,6 +38,7 @@ class LoginApiTests {
   }
 
   @Test
+  @Tag("API-10")
   @DisplayName("POST /verifyLogin - unknown user returns 'User not found!'")
   void shouldReturnUserNotFoundForInvalidCredentials() {
     // Arrange
@@ -50,6 +53,7 @@ class LoginApiTests {
 
   @ParameterizedTest(name = "{0}")
   @MethodSource("missingParameters")
+  @Tag("API-08")
   @DisplayName("POST /verifyLogin - missing parameter returns bad request")
   void shouldReturnBadRequestWhenParameterIsMissing(
       String scenario, String email, String password) {
@@ -63,6 +67,7 @@ class LoginApiTests {
   }
 
   @Test
+  @Tag("API-09")
   @DisplayName("DELETE /verifyLogin - method is not supported")
   void shouldRejectDeleteMethod() {
     // Arrange – no request data needed
