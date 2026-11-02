@@ -1,4 +1,5 @@
-// Compiles, runs API and UI tests as separate stages, then publishes JUnit and Allure results.
+// Compiles, runs API and UI tests as separate stages, then publishes JUnit and Allure results
+// and Plot charts.
 // Jenkins setup is described in README.md, section "Jenkins".
 
 // Runs the Maven Wrapper on Linux and Windows agents.
@@ -27,6 +28,7 @@ def testIdsFilter() {
 // with the build number and the stage name. The agent reads the key from RP_API_KEY.
 // THREADS and extraArgs come only from choice and boolean parameters, so they are safe in a shell.
 def runTests(String filter, String stageName, String extraArgs = '') {
+  long start = System.currentTimeMillis()
   String ids = testIdsFilter()
   String groups = ids ? " -Dgroups=${ids}" : ''
   String threads = " -Dthreads=${params.THREADS ?: '1'}"
@@ -43,6 +45,46 @@ def runTests(String filter, String stageName, String extraArgs = '') {
   } else {
     mvnw(args)
   }
+  long seconds = (System.currentTimeMillis() - start) / 1000
+  writePlotCsv("${stageName}-duration", stageName.toUpperCase(), "${seconds}")
+}
+
+// Publishes the stage's JUnit results and saves its test counts for the Plot charts.
+def recordResults(String stageName, String reports) {
+  def summary = junit testResults: reports, allowEmptyResults: true
+  writePlotCsv(
+      "${stageName}-tests",
+      'Passed,Failed,Skipped',
+      "${summary.passCount},${summary.failCount},${summary.skipCount}")
+}
+
+// Plot plugin input: the first line holds the series names, the second this build's values.
+// Each build adds one point per series. Files go to target/plot, which Compile cleans.
+def writePlotCsv(String name, String header, String values) {
+  writeFile file: "target/plot/${name}.csv", text: "${header}
+${values}
+"
+}
+
+def csvSeries(String name) {
+  return [
+      file: "target/plot/${name}.csv",
+      url: '',
+      inclusionFlag: 'OFF',
+      exclusionValues: '',
+      displayTableFlag: false]
+}
+
+// Charts on the job page (Plots). Runs only for full runs (TEST_IDS = ALL), so every point
+// counts the same tests. A series whose stage was skipped (SUITE) gets no point.
+def publishPlots() {
+  plot group: 'Test results', title: 'API tests', style: 'line', yaxis: 'tests',
+      numBuilds: '30', csvFileName: 'plot-api-tests.csv', csvSeries: [csvSeries('api-tests')]
+  plot group: 'Test results', title: 'UI tests', style: 'line', yaxis: 'tests',
+      numBuilds: '30', csvFileName: 'plot-ui-tests.csv', csvSeries: [csvSeries('ui-tests')]
+  plot group: 'Test results', title: 'Stage duration', style: 'line', yaxis: 'seconds',
+      numBuilds: '30', csvFileName: 'plot-duration.csv',
+      csvSeries: [csvSeries('api-duration'), csvSeries('ui-duration')]
 }
 
 // Parameters are empty in the first build after they are added, so each one has a default here.
@@ -134,8 +176,7 @@ pipeline {
       }
       post {
         always {
-          junit testResults: 'target/surefire-reports/TEST-com.qa.automation.api.*.xml',
-              allowEmptyResults: true
+          recordResults('api', 'target/surefire-reports/TEST-com.qa.automation.api.*.xml')
         }
       }
     }
@@ -149,8 +190,7 @@ pipeline {
       }
       post {
         always {
-          junit testResults: 'target/surefire-reports/TEST-com.qa.automation.webui.*.xml',
-              allowEmptyResults: true
+          recordResults('ui', 'target/surefire-reports/TEST-com.qa.automation.webui.*.xml')
         }
       }
     }
@@ -161,6 +201,11 @@ pipeline {
       // One Allure report for both stages: results accumulate in target/allure-results.
       allure results: [[path: 'target/allure-results']]
       archiveArtifacts artifacts: 'target/screenshots/**', allowEmptyArchive: true
+      script {
+        if (!testIdsFilter()) {
+          publishPlots()
+        }
+      }
     }
   }
 }

@@ -269,7 +269,7 @@ The `Jenkinsfile` in the repository root runs the suite with `REMOTE=true` (head
 One-time Jenkins setup:
 
 1. Install Jenkins (Windows installer from [jenkins.io/download](https://www.jenkins.io/download/), LTS) and open `http://localhost:8080`. Choose *Install suggested plugins*.
-2. *Manage Jenkins → Plugins*: install **Allure Jenkins Plugin**.
+2. *Manage Jenkins → Plugins*: install **Allure Jenkins Plugin** and **Plot**.
 3. *Manage Jenkins → Tools → Allure Commandline*: add an installation with *Install automatically*.
 4. *Manage Jenkins → Credentials*: add two *Secret text* credentials with IDs `test-user-email` and `test-user-password`.
 5. *New Item → Pipeline*. In *Pipeline*, choose *Pipeline script from SCM → Git*, set the repository URL, branch `*/develop` and script path `Jenkinsfile`.
@@ -286,6 +286,8 @@ Other parameters:
 | **BROWSER** | `chrome`, `edge`, `firefox`, `chrome-mobile` | Browser for the UI tests; `chrome-mobile` emulates a phone screen. |
 | **GRID** | on / off | Runs the UI tests on Selenium Grid at `http://localhost:4444` (start it first). Watch them live at http://localhost:7900 (Chrome), 7901 (Edge) or 7902 (Firefox). |
 | **REPORT_PORTAL** | on / off | Also sends results to ReportPortal (see *ReportPortal*). |
+
+**Charts.** After a full run (`TEST_IDS` = `ALL`) the [Plot](https://plugins.jenkins.io/plot/) plugin adds a point to three charts on the job page (*Plots* in the side menu): passed, failed and skipped **API tests**, the same for **UI tests**, and the **stage duration** in seconds. The pipeline writes the values to small CSV files in `target/plot/` (first line: series names, second line: this build's values). Runs with selected test IDs add no point, so every point counts the same tests. A stage skipped by SUITE adds no point to its series. Durations depend on THREADS, BROWSER and GRID, so compare builds with the same options.
 
 The build history shows the chosen options next to each build number, e.g. `UI | firefox on Grid | 3x | ALL`. The *Console Output* lists every test with its result, as described in *Configuration*.
 
@@ -340,6 +342,7 @@ Java sources follow [Google Java Style](https://google.github.io/styleguide/java
 - [x] Jenkins parameters: SUITE, BROWSER, GRID, REPORT_PORTAL
 - [x] Test progress and errors in the console (Jenkins Console Output)
 - [x] Parallel execution (`-Dthreads`, Jenkins THREADS parameter)
+- [x] Jenkins charts with the Plot plugin: test counts and stage duration per build
 - [x] Test case descriptions linked to the test IDs (`docs/test-cases.md`)
 - [x] Ad blocking (`block.ads`) against full-screen ads that swallow clicks
 - [x] Jenkins pipeline (`Jenkinsfile`) with JUnit and Allure reports
