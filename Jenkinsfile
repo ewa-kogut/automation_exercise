@@ -52,10 +52,11 @@ def runTests(String filter, String stageName, String extraArgs = '') {
 // Publishes the stage's JUnit results and saves its test counts for the Plot charts.
 def recordResults(String stageName, String reports) {
   def summary = junit testResults: reports, allowEmptyResults: true
+  // Plot colours series by their order (red, green, blue), so Failed comes first.
   writePlotCsv(
       "${stageName}-tests",
-      'Passed,Failed,Skipped',
-      "${summary.passCount},${summary.failCount},${summary.skipCount}")
+      'Failed,Passed,Skipped',
+      "${summary.failCount},${summary.passCount},${summary.skipCount}")
 }
 
 // Plot plugin input: the first line holds the series names, the second this build's values.
@@ -77,9 +78,9 @@ def csvSeries(String name) {
 // counts the same tests. A series whose stage was skipped (SUITE) gets no point.
 def publishPlots() {
   plot group: 'Test results', title: 'API tests', style: 'line', yaxis: 'tests',
-      numBuilds: '30', csvFileName: 'plot-api-tests.csv', csvSeries: [csvSeries('api-tests')]
+      numBuilds: '30', csvFileName: 'plot-api-test-counts.csv', csvSeries: [csvSeries('api-tests')]
   plot group: 'Test results', title: 'UI tests', style: 'line', yaxis: 'tests',
-      numBuilds: '30', csvFileName: 'plot-ui-tests.csv', csvSeries: [csvSeries('ui-tests')]
+      numBuilds: '30', csvFileName: 'plot-ui-test-counts.csv', csvSeries: [csvSeries('ui-tests')]
   plot group: 'Test results', title: 'Stage duration', style: 'line', yaxis: 'seconds',
       numBuilds: '30', csvFileName: 'plot-duration.csv',
       csvSeries: [csvSeries('api-duration'), csvSeries('ui-duration')]
