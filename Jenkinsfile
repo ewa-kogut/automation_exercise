@@ -76,13 +76,18 @@ def csvSeries(String name) {
 
 // Charts on the job page (Plots). Runs only for full runs (TEST_IDS = ALL), so every point
 // counts the same tests. A series whose stage was skipped (SUITE) gets no point.
+// csvFileName is the stored chart history: a new name starts the chart from zero (see README).
+// keepRecords keeps the points of builds deleted by buildDiscarder, and without numBuilds the
+// chart shows every build. Plot deletes the stored points of other builds for good.
 def publishPlots() {
   plot group: 'Test results', title: 'API tests', style: 'line', yaxis: 'tests',
-      numBuilds: '30', csvFileName: 'plot-api-test-counts.csv', csvSeries: [csvSeries('api-tests')]
+      keepRecords: true, csvFileName: 'plot-api-test-counts.csv',
+      csvSeries: [csvSeries('api-tests')]
   plot group: 'Test results', title: 'UI tests', style: 'line', yaxis: 'tests',
-      numBuilds: '30', csvFileName: 'plot-ui-test-counts.csv', csvSeries: [csvSeries('ui-tests')]
+      keepRecords: true, csvFileName: 'plot-ui-test-counts.csv',
+      csvSeries: [csvSeries('ui-tests')]
   plot group: 'Test results', title: 'Stage duration', style: 'line', yaxis: 'seconds',
-      numBuilds: '30', csvFileName: 'plot-duration.csv',
+      keepRecords: true, csvFileName: 'plot-duration.csv',
       csvSeries: [csvSeries('api-duration'), csvSeries('ui-duration')]
 }
 
