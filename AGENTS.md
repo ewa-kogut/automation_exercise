@@ -46,7 +46,7 @@ Use the Maven Wrapper. Maven is not installed globally.
 ### Tests
 - Every test has `// Arrange`, `// Act` and `// Assert` sections. If a section has nothing to do, keep the header with a short note, e.g. `// Arrange – no request data needed`.
 - Every test has a `@DisplayName`.
-- Every test has a unique ID as a JUnit `@Tag`, matching the scenario number on the site: `@Tag("TC-05")` for UI test case 5, `@Tag("API-11")` for API 11. Add the ID to the *Current Test Coverage* table in `README.md`. IDs are used by `-Dgroups=...` and the Jenkins `TEST_IDS` parameter.
+- Every test has a unique ID as a JUnit `@Tag`, matching the scenario number on the site: `@Tag("TC-05")` for UI test case 5, `@Tag("API-11")` for API 11. Add the ID to the *Current Test Coverage* table in `README.md` and describe the case in `docs/test-cases.md`. IDs are used by `-Dgroups=...` and the Jenkins `TEST_IDS` parameter.
 - Only classes that contain tests end with `Tests`. Base or helper classes must not use that suffix.
 - `@MethodSource` uses the short method name, never `"pkg.Class#method"`. If the data lives in another class, add a one-line static method in the test class that delegates to it.
 - Use AssertJ (`assertThat`) with `.as(...)` descriptions for boolean checks.
@@ -75,6 +75,7 @@ Use the Maven Wrapper. Maven is not installed globally.
 When tests are added or changed, keep `README.md` in sync:
 - the *Project Structure* tree (new classes, with a short comment);
 - the *Current Test Coverage* table;
+- `docs/test-cases.md`: steps, expected results and every difference from the scenario on the site, with the reason;
 - the *Roadmap*: move finished items to **Done**.
 
 ## Git

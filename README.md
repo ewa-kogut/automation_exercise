@@ -27,9 +27,10 @@ automation-exercise-tests
 ├── .mvn/wrapper
 │   └── maven-wrapper.properties          # pins the Maven version used by mvnw
 ├── docker
-│   ├── kiwitcms/docker-compose.yml       # local Kiwi TCMS (test case management)
 │   ├── reportportal/docker-compose.yml   # local ReportPortal (test run reporting)
 │   └── selenium-grid/docker-compose.yml  # local Selenium Grid: Chrome, Edge, Firefox + noVNC
+├── docs
+│   └── test-cases.md                     # test case descriptions, linked to the test IDs
 ├── mvnw / mvnw.cmd                       # Maven Wrapper scripts (Unix / Windows)
 ├── Jenkinsfile                           # Jenkins pipeline: compile, API and UI stages, JUnit + Allure reports
 ├── pom.xml
@@ -81,7 +82,7 @@ automation-exercise-tests
 
 ## Current Test Coverage
 
-Each test has a unique ID, a JUnit `@Tag` that matches the scenario number on the site: `TC-nn` for [UI test cases](https://automationexercise.com/test_cases), `API-nn` for the [API list](https://automationexercise.com/api_list). Use IDs to run selected tests (see [Running Tests](#running-tests) and [Jenkins](#jenkins)).
+Each test has a unique ID, a JUnit `@Tag` that matches the scenario number on the site: `TC-nn` for [UI test cases](https://automationexercise.com/test_cases), `API-nn` for the [API list](https://automationexercise.com/api_list). Use IDs to run selected tests (see [Running Tests](#running-tests) and [Jenkins](#jenkins)). Steps, expected results and differences from the site's scenarios are described in [docs/test-cases.md](docs/test-cases.md).
 
 | ID | Layer | Test class | Scenario | Status |
 | --- | --- | --- | --- | --- |
@@ -292,15 +293,13 @@ JDK 21 must be installed on the Jenkins machine, and Chrome or Edge for local ru
 
 ## Local Tools (Docker)
 
-The `docker/` folder holds Docker Compose files for three free, self-hosted tools. Both are based on the official files, with host ports changed so they do not clash with Jenkins (port 8080) or with each other. They need [Docker Desktop](https://www.docker.com/products/docker-desktop/) to be running.
+The `docker/` folder holds Docker Compose files for two free, self-hosted tools. Both are based on the official files, with host ports changed so they do not clash with Jenkins (port 8080). They need [Docker Desktop](https://www.docker.com/products/docker-desktop/) to be running.
 
 | Tool | Purpose | Start (from the repository root) | URL |
 | --- | --- | --- | --- |
-| [Kiwi TCMS](https://kiwitcms.org) | test cases, test plans, test runs | `docker compose -f docker/kiwitcms/docker-compose.yml -p kiwitcms up -d` | https://localhost:8443 |
 | [ReportPortal](https://reportportal.io) | test run reports and failure analysis | `docker compose -f docker/reportportal/docker-compose.yml -p reportportal up -d` | http://localhost:8090 |
 | [Selenium Grid](https://www.selenium.dev/documentation/grid/) | Chrome, Edge and Firefox in containers, with a live view | `docker compose -f docker/selenium-grid/docker-compose.yml -p selenium-grid up -d` | http://localhost:4444 |
 
-- Kiwi TCMS, first run only: `docker exec -it kiwi_web /Kiwi/manage.py initial_setup` creates the database and the admin account. The browser warns about the self-signed certificate; accept it.
 - ReportPortal: the first start downloads several GB of images and takes a few minutes. Log in as `superadmin` with the initial password from the compose file and change it right away.
 - Selenium Grid: each browser node runs up to 3 tests at once (`SE_NODE_MAX_SESSIONS`). To watch a test, open http://localhost:7900 (Chrome), 7901 (Edge) or 7902 (Firefox) and click *Connect*, or click the camera icon next to a session at http://localhost:4444. The ports are open only on this computer, so there is no VNC password. Safari is not available: it runs only on macOS.
 - Stop with the same command, replacing `up -d` with `stop`; data is kept in Docker volumes. Passwords can be overridden in a git-ignored `.env` file next to each compose file.
@@ -341,12 +340,13 @@ Java sources follow [Google Java Style](https://google.github.io/styleguide/java
 - [x] Jenkins parameters: SUITE, BROWSER, GRID, REPORT_PORTAL
 - [x] Test progress and errors in the console (Jenkins Console Output)
 - [x] Parallel execution (`-Dthreads`, Jenkins THREADS parameter)
+- [x] Test case descriptions linked to the test IDs (`docs/test-cases.md`)
 - [x] Ad blocking (`block.ads`) against full-screen ads that swallow clicks
 - [x] Jenkins pipeline (`Jenkinsfile`) with JUnit and Allure reports
 - [x] API: products list
 - [x] API: `verifyLogin` positive and negative cases
 - [x] Allure reporting with API request/response logs and failure screenshots
-- [x] Docker Compose files for local Kiwi TCMS and ReportPortal
+- [x] Docker Compose file for local ReportPortal
 - [x] Optional ReportPortal reporting (JUnit 5 agent) with failure screenshots
 
 **Next**
@@ -360,7 +360,6 @@ Java sources follow [Google Java Style](https://google.github.io/styleguide/java
 - [ ] JUnit tags (`smoke`, `regression`)
 - [ ] GitHub Actions pipeline
 - [ ] ReportPortal: REST Assured request/response logs
-- [ ] Link test IDs with test cases in Kiwi TCMS
 
 ## Author
 
