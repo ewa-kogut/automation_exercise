@@ -61,9 +61,7 @@ def recordResults(String stageName, String reports) {
 // Plot plugin input: the first line holds the series names, the second this build's values.
 // Each build adds one point per series. Files go to target/plot, which Compile cleans.
 def writePlotCsv(String name, String header, String values) {
-  writeFile file: "target/plot/${name}.csv", text: "${header}
-${values}
-"
+  writeFile file: "target/plot/${name}.csv", text: "${header}\n${values}\n"
 }
 
 def csvSeries(String name) {
