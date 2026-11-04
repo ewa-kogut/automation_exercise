@@ -60,9 +60,9 @@ automation-exercise-tests
     │   │       ├── BasePage.java             # explicit-wait helpers: click, type, getText, isVisible, isNotVisible
     │   │       ├── HomePage.java
     │   │       ├── LoginPage.java
-    │   │       ├── ProductsPage.java         # placeholder
-    │   │       ├── ProductDetailsPage.java   # placeholder
-    │   │       ├── CartPage.java             # placeholder
+    │   │       ├── ProductsPage.java         # All Products page: title, list, first product, search, add to cart
+    │   │       ├── ProductDetailsPage.java   # product name, category, price, availability, condition, brand
+    │   │       ├── CartPage.java             # cart table: names, prices, quantities, totals
     │   │       └── CheckoutPage.java         # placeholder
     │   └── resources
     │       ├── config.properties             # shared, committed settings
@@ -77,7 +77,9 @@ automation-exercise-tests
         │   │   └── LoginApiTests.java        # verifyLogin: valid, invalid, missing params, DELETE
         │   └── webui
         │       ├── BaseWebTests.java         # driver setup/teardown, opens app, accepts cookies
-        │       └── LoginTests.java
+        │       ├── CartTests.java            # adding products to the cart
+        │       ├── LoginTests.java
+        │       └── ProductsTests.java        # product list, product details, search
         └── resources
             ├── META-INF/services/...Extension # registers console progress and the ReportPortal JUnit 5 agent
             ├── allure.properties             # writes Allure results to target/allure-results
@@ -95,6 +97,9 @@ Each test has a unique ID, a JUnit `@Tag` that matches the scenario number on th
 | `TC-02` | UI | `LoginTests` | Login with valid credentials shows "Logged in as" | Implemented |
 | `TC-03` | UI | `LoginTests` | Invalid credentials show "Your email or password is incorrect!" – unknown email, wrong password, both (parameterised) | Implemented |
 | `TC-04` | UI | `LoginTests` | Logout returns to the login page and hides "Logged in as" | Implemented |
+| `TC-08` | UI | `ProductsTests` | All Products page shows the list; the first product's page shows its name, category, price, availability, condition and brand | Implemented |
+| `TC-09` | UI | `ProductsTests` | Searching shows "Searched Products", and every result's name contains the search term | Implemented |
+| `TC-12` | UI | `CartTests` | Two added products are in the cart with the right name, price, quantity and total | Implemented |
 | `API-01` | API | `ProductsApiTests` | `GET /api/productsList` returns HTTP 200, `responseCode` 200 and a non-empty product list | Implemented |
 | `API-02` | API | `ProductsApiTests` | `POST /api/productsList` – method not supported (`405`) | Implemented |
 | `API-03` | API | `BrandsApiTests` | `GET /api/brandsList` returns HTTP 200, `responseCode` 200 and a non-empty brand list | Implemented |
@@ -354,6 +359,8 @@ Java sources follow [Google Java Style](https://google.github.io/styleguide/java
 - [x] Cookie banner handling
 - [x] UI: successful login
 - [x] UI: login with invalid credentials (parameterised) and logout
+- [x] UI: product list, product details and product search
+- [x] UI: adding products to the cart
 - [x] Screenshot and page HTML on UI test failure
 - [x] Headless browser switch (`remote`) for Jenkins / CI
 - [x] Browser selection (`browser`: Chrome, Edge, Firefox, mobile emulation in Chrome)
@@ -378,8 +385,8 @@ Java sources follow [Google Java Style](https://google.github.io/styleguide/java
 **Next**
 
 - [ ] UI: registration and registration with an existing email (generated test data)
-- [ ] UI: products, search, categories and brands
-- [ ] UI: cart and end-to-end checkout
+- [ ] UI: categories and brands
+- [ ] UI: end-to-end checkout
 - [ ] Hybrid tests: create the user via API, verify in UI, clean up via API
 - [ ] JUnit tags (`smoke`, `regression`)
 - [ ] GitHub Actions pipeline
