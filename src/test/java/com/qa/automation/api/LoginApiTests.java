@@ -30,7 +30,7 @@ class LoginApiTests {
     String password = Config.getRequired("test.user.password");
 
     // Act
-    Response response = loginApiClient.verifyLogin(email, password);
+    Response response = loginApiClient.verifyLoginWithRealCredentials(email, password);
 
     // Assert
     assertApiResponse(response, 200, "User exists!");

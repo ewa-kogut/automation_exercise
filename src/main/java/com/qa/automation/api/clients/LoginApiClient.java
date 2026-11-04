@@ -9,7 +9,16 @@ public class LoginApiClient extends BaseApiClient {
 
   /** Sends POST /verifyLogin; a {@code null} argument omits that form parameter. */
   public Response verifyLogin(String email, String password) {
-    RequestSpecification request = request();
+    return sendVerifyLogin(request(), email, password);
+  }
+
+  /** Sends POST /verifyLogin with real credentials, without saving the request in reports. */
+  public Response verifyLoginWithRealCredentials(String email, String password) {
+    return sendVerifyLogin(unloggedRequest(), email, password);
+  }
+
+  private static Response sendVerifyLogin(
+      RequestSpecification request, String email, String password) {
     if (email != null) {
       request.formParam("email", email);
     }

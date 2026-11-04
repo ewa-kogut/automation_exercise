@@ -47,6 +47,10 @@ public class ProductsPage extends BasePage {
     return isVisible(productCard, Timeouts.MEDIUM);
   }
 
+  public boolean isProductListEmpty() {
+    return isNotVisible(productCard, Timeouts.MEDIUM);
+  }
+
   public String getFirstProductName() {
     return getText(productName);
   }

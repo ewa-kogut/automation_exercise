@@ -70,13 +70,13 @@ public class ConsoleProgressExtension implements BeforeTestExecutionCallback, Te
     System.out.flush();
   }
 
-  /** For a parameterized test, adds the method's display name before the invocation's name. */
+  /** For a parameterized test, puts the method's display name before the variant's name. */
   private static String displayName(ExtensionContext context) {
     String name = context.getDisplayName();
     return context
         .getParent()
         .filter(parent -> parent.getTestMethod().isPresent())
-        .map(parent -> parent.getDisplayName() + " " + name)
+        .map(parent -> parent.getDisplayName() + " > " + name)
         .orElse(name);
   }
 

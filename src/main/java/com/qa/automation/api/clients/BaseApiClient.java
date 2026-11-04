@@ -18,6 +18,11 @@ public abstract class BaseApiClient {
 
   /** Starts a request with the base URL and the Allure filter already set. */
   protected RequestSpecification request() {
-    return given().filter(new AllureRestAssured()).baseUri(baseUrl);
+    return unloggedRequest().filter(new AllureRestAssured());
+  }
+
+  /** For requests with real credentials: Allure would save the form data in its report. */
+  protected RequestSpecification unloggedRequest() {
+    return given().baseUri(baseUrl);
   }
 }

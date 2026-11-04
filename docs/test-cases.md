@@ -23,9 +23,11 @@ Every case says where the automated test differs from the scenario on the site, 
 | [TC-02](#tc-02-login-with-correct-email-and-password) | Login with correct email and password | UI | `LoginTests#shouldLoginSuccessfully` |
 | [TC-03](#tc-03-login-with-incorrect-email-and-password) | Login with incorrect email and password | UI | `LoginTests#shouldShowErrorForInvalidCredentials` |
 | [TC-04](#tc-04-logout) | Logout | UI | `LoginTests#shouldLogoutSuccessfully` |
+| [TC-05](#tc-05-register-user-with-existing-email) | Register user with existing email | UI | `LoginTests#shouldShowErrorForSignupWithExistingEmail` |
 | [TC-08](#tc-08-all-products-and-product-details) | All products and product details | UI | `ProductsTests#shouldShowProductListAndProductDetails` |
 | [TC-09](#tc-09-search-product) | Search product | UI | `ProductsTests#shouldShowMatchingProductsAfterSearch` |
 | [TC-12](#tc-12-add-products-in-cart) | Add products in cart | UI | `CartTests#shouldAddTwoProductsToCart` |
+| [TC-27](#tc-27-search-with-no-results) | Search with no results | UI | `ProductsTests#shouldShowNoProductsForUnknownSearchTerm` |
 | [API-01](#api-01-get-all-products-list) | Get all products list | API | `ProductsApiTests#shouldReturnProductsSuccessfully` |
 | [API-02](#api-02-post-to-all-products-list) | POST to all products list | API | `ProductsApiTests#shouldRejectPostToProductsList` |
 | [API-03](#api-03-get-all-brands-list) | Get all brands list | API | `BrandsApiTests#shouldReturnBrandsSuccessfully` |
@@ -86,6 +88,17 @@ path in the application than an unknown email. It also checks that the user is n
 **Differs from the site:** the site only checks that the user is on the login page. The test also
 checks the URL and that the "Logged in as" text has disappeared.
 
+### TC-05 Register user with existing email
+
+| Step | Action | Expected result |
+| --- | --- | --- |
+| 1 | Open the home page and click *Signup / Login*. | The signup form is visible. |
+| 2 | Enter a name and the test account's email, then click *Signup*. | The error "Email Address already exist!" is shown. |
+
+**Differs from the site:** the site's check "home page is visible" is not a separate assertion: the
+test fails anyway if the link is missing. The site checks that "New User Signup!" is visible, and
+the test checks that the form's heading is visible, whatever its text.
+
 ### TC-08 All products and product details
 
 | Step | Action | Expected result |
@@ -135,6 +148,16 @@ button stops moving (`BasePage.clickWhenNotMoving`).
 
 **Phones:** with `browser=chrome-mobile` there is no hover, so the overlay stays hidden. After a short
 wait the test clicks the *Add to cart* button on the product card instead.
+
+### TC-27 Search with no results
+
+This negative case is not on the site's list, so its number continues after the site's last scenario
+(TC-26). It extends TC-09.
+
+| Step | Action | Expected result |
+| --- | --- | --- |
+| 1 | Open the home page and click *Products*. | The product list is visible. |
+| 2 | Search for a random term, e.g. `nonexistent-<uuid>`. | "Searched Products" is visible, and no products are shown. |
 
 ## API
 
@@ -186,6 +209,8 @@ include products without that word in the name.
 | Request | Expected result |
 | --- | --- |
 | `POST /api/verifyLogin` with the test account's `email` and `password` | HTTP `200`, `responseCode` `200`, `message` "User exists!" |
+
+This is the only API request with real credentials, so it is not attached to the Allure report.
 
 ### API-08 Verify login without a parameter
 

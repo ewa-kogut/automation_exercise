@@ -90,16 +90,18 @@ automation-exercise-tests
 
 ## Current Test Coverage
 
-Each test has a unique ID, a JUnit `@Tag` that matches the scenario number on the site: `TC-nn` for [UI test cases](https://automationexercise.com/test_cases), `API-nn` for the [API list](https://automationexercise.com/api_list). Use IDs to run selected tests (see [Running Tests](#running-tests) and [Jenkins](#jenkins)). Steps, expected results and differences from the site's scenarios are described in [docs/test-cases.md](docs/test-cases.md).
+Each test has a unique ID, a JUnit `@Tag` that matches the scenario number on the site (extra cases that are not on the site continue after its last scenario, from `TC-27`): `TC-nn` for [UI test cases](https://automationexercise.com/test_cases), `API-nn` for the [API list](https://automationexercise.com/api_list). Use IDs to run selected tests (see [Running Tests](#running-tests) and [Jenkins](#jenkins)). Steps, expected results and differences from the site's scenarios are described in [docs/test-cases.md](docs/test-cases.md).
 
 | ID | Layer | Test class | Scenario | Status |
 | --- | --- | --- | --- | --- |
 | `TC-02` | UI | `LoginTests` | Login with valid credentials shows "Logged in as" | Implemented |
 | `TC-03` | UI | `LoginTests` | Invalid credentials show "Your email or password is incorrect!" – unknown email, wrong password, both (parameterised) | Implemented |
 | `TC-04` | UI | `LoginTests` | Logout returns to the login page and hides "Logged in as" | Implemented |
+| `TC-05` | UI | `LoginTests` | Signing up with an existing email shows "Email Address already exist!" | Implemented |
 | `TC-08` | UI | `ProductsTests` | All Products page shows the list; the first product's page shows its name, category, price, availability, condition and brand | Implemented |
 | `TC-09` | UI | `ProductsTests` | Searching shows "Searched Products", and every result's name contains the search term | Implemented |
 | `TC-12` | UI | `CartTests` | Two added products are in the cart with the right name, price, quantity and total | Implemented |
+| `TC-27` | UI | `ProductsTests` | Negative case, not on the site's list: searching for an unknown term shows "Searched Products" and no products | Implemented |
 | `API-01` | API | `ProductsApiTests` | `GET /api/productsList` returns HTTP 200, `responseCode` 200 and a non-empty product list | Implemented |
 | `API-02` | API | `ProductsApiTests` | `POST /api/productsList` – method not supported (`405`) | Implemented |
 | `API-03` | API | `BrandsApiTests` | `GET /api/brandsList` returns HTTP 200, `responseCode` 200 and a non-empty brand list | Implemented |
@@ -361,6 +363,7 @@ Java sources follow [Google Java Style](https://google.github.io/styleguide/java
 - [x] UI: login with invalid credentials (parameterised) and logout
 - [x] UI: product list, product details and product search
 - [x] UI: adding products to the cart
+- [x] UI: negative cases – signup with an existing email, search with no results
 - [x] Screenshot and page HTML on UI test failure
 - [x] Headless browser switch (`remote`) for Jenkins / CI
 - [x] Browser selection (`browser`: Chrome, Edge, Firefox, mobile emulation in Chrome)
@@ -384,7 +387,7 @@ Java sources follow [Google Java Style](https://google.github.io/styleguide/java
 
 **Next**
 
-- [ ] UI: registration and registration with an existing email (generated test data)
+- [ ] UI: registration (generated test data)
 - [ ] UI: categories and brands
 - [ ] UI: end-to-end checkout
 - [ ] Hybrid tests: create the user via API, verify in UI, clean up via API

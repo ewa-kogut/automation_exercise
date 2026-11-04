@@ -6,20 +6,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.qa.automation.pages.HomePage;
 import com.qa.automation.pages.LoginPage;
-import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.EnumSource;
 
 public class LoginTests extends BaseWebTests {
 
   private static final String INVALID_CREDENTIALS_MESSAGE = "Your email or password is incorrect!";
-
-  static Stream<Object[]> invalidCredentials() {
-    return LoginPage.invalidCredentials();
-  }
 
   @Test
   @Tag("TC-02")
@@ -40,17 +35,17 @@ public class LoginTests extends BaseWebTests {
   }
 
   @ParameterizedTest(name = "{0}")
-  @MethodSource("invalidCredentials")
+  @EnumSource(LoginPage.InvalidCredentials.class)
   @Tag("TC-03")
   @DisplayName("Should show an error for invalid credentials")
-  void shouldShowErrorForInvalidCredentials(String scenario, String email, String password) {
+  void shouldShowErrorForInvalidCredentials(LoginPage.InvalidCredentials credentials) {
     // Arrange
     LoginPage loginPage = new LoginPage(driver);
     HomePage homePage = new HomePage(driver);
     loginPage.openLoginPage();
 
     // Act
-    loginPage.login(email, password);
+    loginPage.login(credentials.email(), credentials.password());
 
     // Assert
     assertThat(loginPage.getErrorMessage()).isEqualTo(INVALID_CREDENTIALS_MESSAGE);
@@ -81,5 +76,23 @@ public class LoginTests extends BaseWebTests {
     assertThat(homePage.isLoggedOut())
         .as("'Logged in as' should disappear after logout")
         .isTrue();
+  }
+
+  @Test
+  @Tag("TC-05")
+  @DisplayName("Should show an error when signing up with an existing email")
+  void shouldShowErrorForSignupWithExistingEmail() {
+    // Arrange
+    LoginPage loginPage = new LoginPage(driver);
+    loginPage.openLoginPage();
+    assertThat(loginPage.isSignupFormVisible())
+        .as("Precondition: the signup form is visible")
+        .isTrue();
+
+    // Act
+    loginPage.signup("Test User", validEmail());
+
+    // Assert
+    assertThat(loginPage.getSignupErrorMessage()).isEqualTo("Email Address already exist!");
   }
 }

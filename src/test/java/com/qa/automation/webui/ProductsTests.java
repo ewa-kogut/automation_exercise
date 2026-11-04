@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.qa.automation.pages.ProductDetailsPage;
 import com.qa.automation.pages.ProductsPage;
+import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -58,5 +59,27 @@ public class ProductsTests extends BaseWebTests {
     assertThat(productsPage.getProductNames())
         .isNotEmpty()
         .allSatisfy(name -> assertThat(name).containsIgnoringCase(searchTerm));
+  }
+
+  @Test
+  @Tag("TC-27")
+  @DisplayName("Should show no products when the search term matches nothing")
+  void shouldShowNoProductsForUnknownSearchTerm() {
+    // Arrange
+    ProductsPage productsPage = new ProductsPage(driver);
+    String searchTerm = "nonexistent-" + UUID.randomUUID();
+    productsPage.openProductsPage();
+    assertThat(productsPage.isProductListVisible())
+        .as("Precondition: products are shown before searching")
+        .isTrue();
+
+    // Act
+    productsPage.searchFor(searchTerm);
+
+    // Assert
+    assertThat(productsPage.isSearchedProductsTitleVisible())
+        .as("'Searched Products' should be visible after searching")
+        .isTrue();
+    assertThat(productsPage.isProductListEmpty()).as("No products should be shown").isTrue();
   }
 }
