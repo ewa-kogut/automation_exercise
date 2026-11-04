@@ -6,7 +6,7 @@ Instructions for AI coding agents working in this repository. For human-facing d
 
 UI (Selenium) and API (REST Assured) test automation for https://automationexercise.com, a demo e-commerce site.
 - Source of scenarios: [UI test cases](https://automationexercise.com/test_cases), [API list](https://automationexercise.com/api_list).
-- Stack: Java 21, Maven (via wrapper), JUnit 5, AssertJ, Selenium 4, REST Assured 5.
+- Stack: Java 21, Maven (via wrapper), JUnit 5, AssertJ, Awaitility, Selenium 4, REST Assured 5.
 
 ## Commands
 

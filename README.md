@@ -13,6 +13,7 @@ UI and API test automation framework for [Automation Exercise](https://automatio
 | API automation | REST Assured | 5.5.6 |
 | Test runner | JUnit 5 (Jupiter) | 5.12.2 |
 | Assertions | AssertJ | 3.26.3 |
+| Retrying API cleanup | Awaitility | 4.3.0 |
 | Reporting | Allure Report (allure-jupiter, allure-rest-assured, allure-maven) | 2.35.5 / plugin 3.1.0 |
 | Reporting | ReportPortal JUnit 5 agent (agent-java-junit5), optional | 5.5.8 |
 | Design pattern | Page Object Model | – |
@@ -39,10 +40,11 @@ automation-exercise-tests
     ├── main
     │   ├── java/com/qa/automation
     │   │   ├── api/clients
+    │   │   │   ├── AccountApiClient.java     # REST Assured client for account create, get, update, delete
     │   │   │   ├── BaseApiClient.java        # base URL and Allure filter for all API clients
     │   │   │   ├── BrandsApiClient.java      # REST Assured client for /brandsList
     │   │   │   ├── LoginApiClient.java       # REST Assured client for /verifyLogin
-    │   │   │   └── ProductsApiClient.java    # REST Assured client for /productsList
+    │   │   │   └── ProductsApiClient.java    # REST Assured client for /productsList, /searchProduct
     │   │   ├── components
     │   │   │   └── CookieBanner.java         # accepts the consent banner if shown
     │   │   ├── config
@@ -68,8 +70,9 @@ automation-exercise-tests
     └── test
         ├── java/com/qa/automation
         │   ├── api
+        │   │   ├── AccountApiTests.java      # account lifecycle: create, delete, update, get by email
         │   │   ├── ApiAssertions.java        # shared check of HTTP status, responseCode, message
-        │   │   ├── ProductsApiTests.java     # productsList: GET list, POST not supported
+        │   │   ├── ProductsApiTests.java     # productsList: GET, POST not supported; searchProduct: match, missing param
         │   │   ├── BrandsApiTests.java       # brandsList: GET list, PUT not supported
         │   │   └── LoginApiTests.java        # verifyLogin: valid, invalid, missing params, DELETE
         │   └── webui
@@ -96,10 +99,16 @@ Each test has a unique ID, a JUnit `@Tag` that matches the scenario number on th
 | `API-02` | API | `ProductsApiTests` | `POST /api/productsList` – method not supported (`405`) | Implemented |
 | `API-03` | API | `BrandsApiTests` | `GET /api/brandsList` returns HTTP 200, `responseCode` 200 and a non-empty brand list | Implemented |
 | `API-04` | API | `BrandsApiTests` | `PUT /api/brandsList` – method not supported (`405`) | Implemented |
+| `API-05` | API | `ProductsApiTests` | `POST /api/searchProduct` – every returned product name contains the search term (`200`) | Implemented |
+| `API-06` | API | `ProductsApiTests` | `POST /api/searchProduct` without `search_product` (`400`) | Implemented |
 | `API-07` | API | `LoginApiTests` | `POST /api/verifyLogin` – valid credentials (`200`) | Implemented |
 | `API-08` | API | `LoginApiTests` | `POST /api/verifyLogin` – missing email / password / both (`400`, parameterised) | Implemented |
 | `API-09` | API | `LoginApiTests` | `DELETE /api/verifyLogin` – method not supported (`405`) | Implemented |
 | `API-10` | API | `LoginApiTests` | `POST /api/verifyLogin` – unknown user (`404`) | Implemented |
+| `API-11` | API | `AccountApiTests` | `POST /api/createAccount` – creates a user (`201`) | Implemented |
+| `API-12` | API | `AccountApiTests` | `DELETE /api/deleteAccount` – deletes the user, who can no longer be found (`200`) | Implemented |
+| `API-13` | API | `AccountApiTests` | `PUT /api/updateAccount` – updates the user, the change is saved (`200`) | Implemented |
+| `API-14` | API | `AccountApiTests` | `GET /api/getUserDetailByEmail` – returns the user's details (`200`) | Implemented |
 
 ## Framework Design
 
@@ -359,6 +368,8 @@ Java sources follow [Google Java Style](https://google.github.io/styleguide/java
 - [x] API: products list (GET) and unsupported POST
 - [x] API: `verifyLogin` positive and negative cases
 - [x] API: brands list (GET) and unsupported PUT
+- [x] API: product search
+- [x] API: full account lifecycle – create, get, update, delete
 - [x] Rerun of failed tests (`-Dreruns`, Jenkins RERUN_FAILED), reported as flaky
 - [x] Allure reporting with API request/response logs and failure screenshots
 - [x] Docker Compose file for local ReportPortal
@@ -369,8 +380,6 @@ Java sources follow [Google Java Style](https://google.github.io/styleguide/java
 - [ ] UI: registration and registration with an existing email (generated test data)
 - [ ] UI: products, search, categories and brands
 - [ ] UI: cart and end-to-end checkout
-- [ ] API: product search
-- [ ] API: full account lifecycle – create, get, update, delete
 - [ ] Hybrid tests: create the user via API, verify in UI, clean up via API
 - [ ] JUnit tags (`smoke`, `regression`)
 - [ ] GitHub Actions pipeline

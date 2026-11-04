@@ -42,4 +42,37 @@ class ProductsApiTests {
     // Assert
     assertApiResponse(response, 405, "This request method is not supported.");
   }
+
+  @Test
+  @Tag("API-05")
+  @DisplayName("POST /searchProduct - returns products matching the search term")
+  void shouldReturnProductsMatchingSearchTerm() {
+    // Arrange
+    String searchTerm = "jean";
+
+    // Act
+    Response response = productsApiClient.searchProduct(searchTerm);
+
+    // Assert
+    JsonPath json = JsonPath.from(response.asString());
+    assertThat(response.statusCode()).isEqualTo(200);
+    assertThat(json.getInt("responseCode")).isEqualTo(200);
+    assertThat(json.getList("products.name", String.class))
+        .isNotEmpty()
+        .allSatisfy(name -> assertThat(name).containsIgnoringCase(searchTerm));
+  }
+
+  @Test
+  @Tag("API-06")
+  @DisplayName("POST /searchProduct - missing search_product returns bad request")
+  void shouldReturnBadRequestWhenSearchTermIsMissing() {
+    // Arrange – the request deliberately has no search term
+
+    // Act
+    Response response = productsApiClient.searchProduct(null);
+
+    // Assert
+    assertApiResponse(
+        response, 400, "Bad request, search_product parameter is missing in POST request.");
+  }
 }
