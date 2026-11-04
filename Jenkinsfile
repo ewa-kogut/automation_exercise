@@ -26,14 +26,15 @@ def testIdsFilter() {
 // With TEST_IDS set, a stage that has none of the selected tests runs nothing and stays green.
 // With REPORT_PORTAL checked, results also go to ReportPortal as one launch per stage, tagged
 // with the build number and the stage name. The agent reads the key from RP_API_KEY.
-// THREADS and extraArgs come only from choice and boolean parameters, so they are safe in a shell.
+// THREADS, RERUN_FAILED and extraArgs come only from choice and boolean parameters, so they are
+// safe in a shell.
 def runTests(String filter, String stageName, String extraArgs = '') {
   long start = System.currentTimeMillis()
   String ids = testIdsFilter()
   String groups = ids ? " -Dgroups=${ids}" : ''
-  String threads = " -Dthreads=${params.THREADS ?: '1'}"
+  String execution = " -Dthreads=${params.THREADS ?: '1'} -Dreruns=${reruns()}"
   String args =
-      "test -Dtest=\"${filter}\"${groups}${threads} -Dmaven.test.failure.ignore=true${extraArgs}"
+      "test -Dtest=\"${filter}\"${groups}${execution} -Dmaven.test.failure.ignore=true${extraArgs}"
   if (params.REPORT_PORTAL) {
     withCredentials([string(credentialsId: 'rp-api-key', variable: 'RP_API_KEY')]) {
       String attributes = "build:${env.BUILD_NUMBER};stage:${stageName}"
@@ -96,6 +97,10 @@ def suite() {
   return params.SUITE ?: 'ALL'
 }
 
+def reruns() {
+  return params.RERUN_FAILED ?: '1'
+}
+
 def browser() {
   return params.BROWSER ?: 'chrome'
 }
@@ -125,6 +130,12 @@ pipeline {
         choices: ['1', '2', '3', '4'],
         description: 'How many tests run at the same time, each in its own browser. '
             + 'On Grid each browser node takes up to 3.')
+    choice(
+        name: 'RERUN_FAILED',
+        choices: ['1', '0', '2'],
+        description: 'How many times a failed test runs again. A test that passes on a rerun is '
+            + 'reported as flaky, so short outages of the site (HTTP 503, queue full) do not fail '
+            + 'the build. 0 turns reruns off.')
     choice(
         name: 'BROWSER',
         choices: ['chrome', 'edge', 'firefox', 'chrome-mobile'],
@@ -165,7 +176,8 @@ pipeline {
           String where = params.GRID ? ' on Grid' : ''
           String ids = params.TEST_IDS ?: 'ALL'
           String threads = params.THREADS ?: '1'
-          currentBuild.description = "${suite()} | ${browser()}${where} | ${threads}x | ${ids}"
+          currentBuild.description =
+              "${suite()} | ${browser()}${where} | ${threads}x | rerun ${reruns()} | ${ids}"
         }
         mvnw('clean test-compile')
       }

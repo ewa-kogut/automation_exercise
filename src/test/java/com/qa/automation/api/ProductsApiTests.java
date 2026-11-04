@@ -1,9 +1,9 @@
 package com.qa.automation.api;
 
+import static com.qa.automation.api.ApiAssertions.assertApiResponse;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.qa.automation.api.clients.ProductsApiClient;
-import com.qa.automation.config.Config;
 import io.restassured.path.json.JsonPath;
 import io.restassured.response.Response;
 import org.junit.jupiter.api.DisplayName;
@@ -12,8 +12,7 @@ import org.junit.jupiter.api.Test;
 
 class ProductsApiTests {
 
-  private final ProductsApiClient productsApiClient =
-      new ProductsApiClient(Config.get("api.base.url"));
+  private final ProductsApiClient productsApiClient = new ProductsApiClient();
 
   @Test
   @Tag("API-01")
@@ -29,5 +28,18 @@ class ProductsApiTests {
     assertThat(response.statusCode()).isEqualTo(200);
     assertThat(json.getInt("responseCode")).isEqualTo(200);
     assertThat(json.getList("products")).isNotEmpty();
+  }
+
+  @Test
+  @Tag("API-02")
+  @DisplayName("POST /productsList - method is not supported")
+  void shouldRejectPostToProductsList() {
+    // Arrange – no request data needed
+
+    // Act
+    Response response = productsApiClient.postProductsList();
+
+    // Assert
+    assertApiResponse(response, 405, "This request method is not supported.");
   }
 }

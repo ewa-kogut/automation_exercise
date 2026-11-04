@@ -39,6 +39,8 @@ automation-exercise-tests
     ├── main
     │   ├── java/com/qa/automation
     │   │   ├── api/clients
+    │   │   │   ├── BaseApiClient.java        # base URL and Allure filter for all API clients
+    │   │   │   ├── BrandsApiClient.java      # REST Assured client for /brandsList
     │   │   │   ├── LoginApiClient.java       # REST Assured client for /verifyLogin
     │   │   │   └── ProductsApiClient.java    # REST Assured client for /productsList
     │   │   ├── components
@@ -66,8 +68,9 @@ automation-exercise-tests
     └── test
         ├── java/com/qa/automation
         │   ├── api
-        │   │   ├── ProductsApiTests.java
-        │   │   ├── BrandsApiTests.java       # placeholder
+        │   │   ├── ApiAssertions.java        # shared check of HTTP status, responseCode, message
+        │   │   ├── ProductsApiTests.java     # productsList: GET list, POST not supported
+        │   │   ├── BrandsApiTests.java       # brandsList: GET list, PUT not supported
         │   │   └── LoginApiTests.java        # verifyLogin: valid, invalid, missing params, DELETE
         │   └── webui
         │       ├── BaseWebTests.java         # driver setup/teardown, opens app, accepts cookies
@@ -90,7 +93,9 @@ Each test has a unique ID, a JUnit `@Tag` that matches the scenario number on th
 | `TC-03` | UI | `LoginTests` | Invalid credentials show "Your email or password is incorrect!" – unknown email, wrong password, both (parameterised) | Implemented |
 | `TC-04` | UI | `LoginTests` | Logout returns to the login page and hides "Logged in as" | Implemented |
 | `API-01` | API | `ProductsApiTests` | `GET /api/productsList` returns HTTP 200, `responseCode` 200 and a non-empty product list | Implemented |
-| `API-03` | API | `BrandsApiTests` | Brands list | Planned |
+| `API-02` | API | `ProductsApiTests` | `POST /api/productsList` – method not supported (`405`) | Implemented |
+| `API-03` | API | `BrandsApiTests` | `GET /api/brandsList` returns HTTP 200, `responseCode` 200 and a non-empty brand list | Implemented |
+| `API-04` | API | `BrandsApiTests` | `PUT /api/brandsList` – method not supported (`405`) | Implemented |
 | `API-07` | API | `LoginApiTests` | `POST /api/verifyLogin` – valid credentials (`200`) | Implemented |
 | `API-08` | API | `LoginApiTests` | `POST /api/verifyLogin` – missing email / password / both (`400`, parameterised) | Implemented |
 | `API-09` | API | `LoginApiTests` | `DELETE /api/verifyLogin` – method not supported (`405`) | Implemented |
@@ -104,7 +109,7 @@ Each test has a unique ID, a JUnit `@Tag` that matches the scenario number on th
 
 **Failure artifacts.** `BaseWebTests` registers `ScreenshotOnFailureExtension`. When a UI test fails, the extension saves a screenshot (`.png`) and the page HTML (`.html`) to `target/screenshots/` while the browser is still open. It also prints the current URL and both file paths to the console, and attaches the screenshot and HTML to the Allure report. Screenshots can show the test account's email address, so treat them as sensitive when sharing build artifacts.
 
-**API clients.** HTTP calls live in client classes (`api/clients`), and tests only call client methods and assert on the result. Every request goes through the `AllureRestAssured` filter, so the Allure report shows each request and response.
+**API clients.** HTTP calls live in client classes (`api/clients`), and tests only call client methods and assert on the result. Clients extend `BaseApiClient`, which reads `api.base.url` and starts every request with `request()`: the base URL plus the `AllureRestAssured` filter, so the Allure report shows each request and response. A new client only extends `BaseApiClient` and adds its endpoint methods, e.g. `request().when().get("/brandsList")`. Tests create clients with `new BrandsApiClient()`.
 
 **Note on the API under test.** Automation Exercise returns HTTP `200` even for error cases and puts the real status in the `responseCode` field of the body. The response is also served as `text/html`, so tests parse the body explicitly with `JsonPath.from(response.asString())` and assert on both the HTTP status and `responseCode`.
 
@@ -141,6 +146,8 @@ block.ads=true
 `block.ads` (default `true`) stops the browser from reaching the site's ad networks (`googlesyndication.com`, `doubleclick.net`, `googleadservices.com`, `adtrafficquality.google`). Their full-screen ads (`#google_vignette` in the URL) cover the page and swallow clicks, which made tests fail at random, most often on Grid and in `chrome-mobile`. Chrome and Edge resolve these domains to "not found"; Firefox gets a proxy auto-config (PAC) script that sends them to a closed local port. Both work locally and on Grid. The Google consent (cookie) banner is loaded by the same script, so with blocked ads it does not appear and `BaseWebTests` skips it. Use `-Dblock.ads=false` to see the site as a real visitor does.
 
 `threads` (Maven property, default `1`) sets how many tests run at the same time, e.g. `./mvnw -B test -Dthreads=3`. JUnit runs classes and methods in parallel, and each test still gets its own browser: `DriverManager` keeps one WebDriver per thread in a `ThreadLocal`. The setting lives in the Surefire configuration in `pom.xml`, so runs from IntelliJ IDEA stay sequential. On Selenium Grid each browser node takes up to 3 tests at once.
+
+`reruns` (Maven property, default `0`) runs a failed test again, e.g. `./mvnw -B test -Dreruns=1`. A test that passes on a rerun is reported as **flaky** (Surefire, JUnit in Jenkins and Allure all show it), so a short outage of the site does not hide a real problem. Automation Exercise is a shared demo site and sometimes answers HTTP 503 or "This website is under heavy load (queue full)"; Jenkins reruns once by default. Locally reruns are off, so a failing test fails straight away while you work on it.
 
 `grid.url` sends UI tests to Selenium Grid (see *Local Tools (Docker)*), e.g. `./mvnw -B test -Dgrid.url=http://localhost:4444 -Dbrowser=firefox`. Grid browsers ignore `remote`: they always have a 1920×1080 screen, which you can watch live with noVNC.
 
@@ -283,6 +290,7 @@ Other parameters:
 | --- | --- | --- |
 | **SUITE** | `ALL`, `API`, `UI` | Which test stages run; the other stage is skipped. `TEST_IDS` still filters inside them. |
 | **THREADS** | `1`–`4` | How many tests run at the same time (`-Dthreads`). |
+| **RERUN_FAILED** | `1` (default), `0`, `2` | How many times a failed test runs again (`-Dreruns`); a test that passes on a rerun is reported as flaky. |
 | **BROWSER** | `chrome`, `edge`, `firefox`, `chrome-mobile` | Browser for the UI tests; `chrome-mobile` emulates a phone screen. |
 | **GRID** | on / off | Runs the UI tests on Selenium Grid at `http://localhost:4444` (start it first). Watch them live at http://localhost:7900 (Chrome), 7901 (Edge) or 7902 (Firefox). |
 | **REPORT_PORTAL** | on / off | Also sends results to ReportPortal (see *ReportPortal*). |
@@ -291,7 +299,7 @@ Other parameters:
 
 > **Note: changing series or colours resets the chart.** Plot has no colour setting: it colours series by their order (1st red, 2nd green, 3rd blue), which is why the CSV columns are `Failed,Passed,Skipped`. The order is fixed by the data Plot has already stored in the job folder (`csvFileName`, e.g. `plot-api-test-counts.csv`). To change the order or the series, you must also give the plot a new `csvFileName` in the `Jenkinsfile`, and the chart then starts again from an empty history. The old file stays in the job folder, unused. Change the series only when losing the chart history is acceptable.
 
-The build history shows the chosen options next to each build number, e.g. `UI | firefox on Grid | 3x | ALL`. The *Console Output* lists every test with its result, as described in *Configuration*.
+The build history shows the chosen options next to each build number, e.g. `UI | firefox on Grid | 3x | rerun 1 | ALL`. The *Console Output* lists every test with its result, as described in *Configuration*.
 
 JDK 21 must be installed on the Jenkins machine, and Chrome or Edge for local runs. The Jenkins Windows service has no desktop, so the pipeline runs a local browser headless; on Grid the browser has its own screen.
 
@@ -348,8 +356,10 @@ Java sources follow [Google Java Style](https://google.github.io/styleguide/java
 - [x] Test case descriptions linked to the test IDs (`docs/test-cases.md`)
 - [x] Ad blocking (`block.ads`) against full-screen ads that swallow clicks
 - [x] Jenkins pipeline (`Jenkinsfile`) with JUnit and Allure reports
-- [x] API: products list
+- [x] API: products list (GET) and unsupported POST
 - [x] API: `verifyLogin` positive and negative cases
+- [x] API: brands list (GET) and unsupported PUT
+- [x] Rerun of failed tests (`-Dreruns`, Jenkins RERUN_FAILED), reported as flaky
 - [x] Allure reporting with API request/response logs and failure screenshots
 - [x] Docker Compose file for local ReportPortal
 - [x] Optional ReportPortal reporting (JUnit 5 agent) with failure screenshots
@@ -359,7 +369,7 @@ Java sources follow [Google Java Style](https://google.github.io/styleguide/java
 - [ ] UI: registration and registration with an existing email (generated test data)
 - [ ] UI: products, search, categories and brands
 - [ ] UI: cart and end-to-end checkout
-- [ ] API: brands, product search
+- [ ] API: product search
 - [ ] API: full account lifecycle – create, get, update, delete
 - [ ] Hybrid tests: create the user via API, verify in UI, clean up via API
 - [ ] JUnit tags (`smoke`, `regression`)

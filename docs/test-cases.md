@@ -24,6 +24,9 @@ Every case says where the automated test differs from the scenario on the site, 
 | [TC-03](#tc-03-login-with-incorrect-email-and-password) | Login with incorrect email and password | UI | `LoginTests#shouldShowErrorForInvalidCredentials` |
 | [TC-04](#tc-04-logout) | Logout | UI | `LoginTests#shouldLogoutSuccessfully` |
 | [API-01](#api-01-get-all-products-list) | Get all products list | API | `ProductsApiTests#shouldReturnProductsSuccessfully` |
+| [API-02](#api-02-post-to-all-products-list) | POST to all products list | API | `ProductsApiTests#shouldRejectPostToProductsList` |
+| [API-03](#api-03-get-all-brands-list) | Get all brands list | API | `BrandsApiTests#shouldReturnBrandsSuccessfully` |
+| [API-04](#api-04-put-to-all-brands-list) | PUT to all brands list | API | `BrandsApiTests#shouldRejectPutToBrandsList` |
 | [API-07](#api-07-verify-login-with-valid-details) | Verify login with valid details | API | `LoginApiTests#shouldVerifyLoginWithValidCredentials` |
 | [API-08](#api-08-verify-login-without-a-parameter) | Verify login without a parameter | API | `LoginApiTests#shouldReturnBadRequestWhenParameterIsMissing` |
 | [API-09](#api-09-delete-to-verify-login) | DELETE to verify login | API | `LoginApiTests#shouldRejectDeleteMethod` |
@@ -81,6 +84,27 @@ checks the URL and that the "Logged in as" text has disappeared.
 | Request | Expected result |
 | --- | --- |
 | `GET /api/productsList` | HTTP `200`, `responseCode` `200`, the `products` list is not empty. |
+
+### API-02 POST to all products list
+
+| Request | Expected result |
+| --- | --- |
+| `POST /api/productsList` without parameters | HTTP `200`, `responseCode` `405`, `message` "This request method is not supported." |
+
+The request has no body: the API rejects the method before it reads any data, so the result does
+not depend on what is sent.
+
+### API-03 Get all brands list
+
+| Request | Expected result |
+| --- | --- |
+| `GET /api/brandsList` | HTTP `200`, `responseCode` `200`, the `brands` list is not empty. |
+
+### API-04 PUT to all brands list
+
+| Request | Expected result |
+| --- | --- |
+| `PUT /api/brandsList` without parameters | HTTP `200`, `responseCode` `405`, `message` "This request method is not supported." |
 
 ### API-07 Verify login with valid details
 

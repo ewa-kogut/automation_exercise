@@ -1,19 +1,16 @@
 package com.qa.automation.api.clients;
 
-import static io.restassured.RestAssured.given;
-
-import io.qameta.allure.restassured.AllureRestAssured;
 import io.restassured.response.Response;
 
-public class ProductsApiClient {
+public class ProductsApiClient extends BaseApiClient {
 
-  private final String baseUrl;
-
-  public ProductsApiClient(String baseUrl) {
-    this.baseUrl = baseUrl;
-  }
+  private static final String PRODUCTS_LIST = "/productsList";
 
   public Response getProducts() {
-    return given().filter(new AllureRestAssured()).baseUri(baseUrl).when().get("/productsList");
+    return request().when().get(PRODUCTS_LIST);
+  }
+
+  public Response postProductsList() {
+    return request().when().post(PRODUCTS_LIST);
   }
 }

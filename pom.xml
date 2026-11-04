@@ -25,6 +25,8 @@
 
         <!-- How many tests run at the same time; override with -Dthreads=4 -->
         <threads>1</threads>
+        <!-- How many times a failed test is run again; override with -Dreruns=1 -->
+        <reruns>0</reruns>
     </properties>
 
     <dependencyManagement>
@@ -121,6 +123,8 @@
                         <!-- Turns off the anonymous usage statistics sent by the ReportPortal agent -->
                         <AGENT_NO_ANALYTICS>true</AGENT_NO_ANALYTICS>
                     </environmentVariables>
+                    <!-- A test that passes on a rerun is reported as flaky, not as passed -->
+                    <rerunFailingTestsCount>${reruns}</rerunFailingTestsCount>
                     <!-- JUnit parallel execution: classes and methods run on ${threads} threads.
                          Each test has its own browser (DriverManager keeps one per thread). -->
                     <properties>

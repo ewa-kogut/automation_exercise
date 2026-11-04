@@ -1,10 +1,9 @@
 package com.qa.automation.api;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static com.qa.automation.api.ApiAssertions.assertApiResponse;
 
 import com.qa.automation.api.clients.LoginApiClient;
 import com.qa.automation.config.Config;
-import io.restassured.path.json.JsonPath;
 import io.restassured.response.Response;
 import java.util.UUID;
 import java.util.stream.Stream;
@@ -20,7 +19,7 @@ class LoginApiTests {
   private static final String MISSING_PARAMETER_MESSAGE =
       "Bad request, email or password parameter is missing in POST request.";
 
-  private final LoginApiClient loginApiClient = new LoginApiClient(Config.get("api.base.url"));
+  private final LoginApiClient loginApiClient = new LoginApiClient();
 
   @Test
   @Tag("API-07")
@@ -84,15 +83,5 @@ class LoginApiTests {
         Arguments.of("missing email", null, "any-password"),
         Arguments.of("missing password", "user@example.com", null),
         Arguments.of("missing email and password", null, null));
-  }
-
-  /** The API always returns HTTP 200 and carries the real status in the body. */
-  private static void assertApiResponse(
-      Response response, int expectedResponseCode, String expectedMessage) {
-    JsonPath json = JsonPath.from(response.asString());
-
-    assertThat(response.statusCode()).isEqualTo(200);
-    assertThat(json.getInt("responseCode")).isEqualTo(expectedResponseCode);
-    assertThat(json.getString("message")).isEqualTo(expectedMessage);
   }
 }
