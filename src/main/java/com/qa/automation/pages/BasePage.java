@@ -11,6 +11,7 @@ import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.interactions.Actions;
 import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.Select;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
 public abstract class BasePage {
@@ -80,6 +81,10 @@ public abstract class BasePage {
     WebElement element = waitForVisible(locator);
     element.clear();
     element.sendKeys(text);
+  }
+
+  protected void selectByText(By locator, String text) {
+    new Select(waitForVisible(locator)).selectByVisibleText(text);
   }
 
   protected String getText(By locator) {

@@ -20,6 +20,7 @@ Every case says where the automated test differs from the scenario on the site, 
 
 | ID | Title | Layer | Automated test |
 | --- | --- | --- | --- |
+| [TC-01](#tc-01-register-user) | Register user | UI | `RegistrationTests#shouldRegisterAndDeleteUser` |
 | [TC-02](#tc-02-login-with-correct-email-and-password) | Login with correct email and password | UI | `LoginTests#shouldLoginSuccessfully` |
 | [TC-03](#tc-03-login-with-incorrect-email-and-password) | Login with incorrect email and password | UI | `LoginTests#shouldShowErrorForInvalidCredentials` |
 | [TC-04](#tc-04-logout) | Logout | UI | `LoginTests#shouldLogoutSuccessfully` |
@@ -47,6 +48,29 @@ Every case says where the automated test differs from the scenario on the site, 
 | [API-14](#api-14-get-user-detail-by-email) | Get user detail by email | API | `AccountApiTests#shouldReturnUserDetailByEmail` |
 
 ## UI
+
+### TC-01 Register user
+
+Each run uses a new random email, e.g. `test-<uuid>@example.com`, and a fixed test password that
+belongs to no real account.
+
+| Step | Action | Expected result |
+| --- | --- | --- |
+| 1 | Open the home page and click *Signup / Login*. | The signup form is visible. |
+| 2 | Enter a name and the random email, then click *Signup*. | "ENTER ACCOUNT INFORMATION" is shown. |
+| 3 | Fill in the title, password and date of birth, and tick the newsletter and partner offers boxes. | |
+| 4 | Fill in the address details and click *Create Account*. | "ACCOUNT CREATED!" is shown. |
+| 5 | Click *Continue*. | "Logged in as Test User" is shown in the header. |
+| 6 | Click *Delete Account*. | "ACCOUNT DELETED!" is shown. |
+| 7 | Click *Continue*. | "Logged in as" is no longer visible. |
+
+**Cleanup:** if the test fails before step 6, an API call deletes the account afterwards, so a failed
+run leaves nothing behind.
+
+**Differs from the site:** the site's check "home page is visible" is not a separate assertion: the
+test fails anyway if the link is missing. The site checks that "New User Signup!" is visible, and
+the test checks that the form's heading is visible, whatever its text. The site ends with clicking
+*Continue*, and the test also checks that the user is logged out.
 
 ### TC-02 Login with correct email and password
 

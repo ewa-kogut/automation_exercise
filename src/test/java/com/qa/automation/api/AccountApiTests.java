@@ -3,12 +3,10 @@ package com.qa.automation.api;
 import static com.qa.automation.api.ApiAssertions.assertApiResponse;
 import static java.util.Map.entry;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.awaitility.Awaitility.await;
 
 import com.qa.automation.api.clients.AccountApiClient;
 import io.restassured.path.json.JsonPath;
 import io.restassured.response.Response;
-import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -21,34 +19,15 @@ class AccountApiTests {
 
   private static final String ACCOUNT_NOT_FOUND_MESSAGE =
       "Account not found with this email, try another email!";
-  private static final Duration CLEANUP_RETRY_INTERVAL = Duration.ofSeconds(2);
-  private static final Duration CLEANUP_TIMEOUT = Duration.ofSeconds(10);
   private static final String NAME = "Test User";
   private static final String PASSWORD = "Test-password-1";
 
   private final AccountApiClient accountApiClient = new AccountApiClient();
   private final String email = "test-" + UUID.randomUUID() + "@example.com";
 
-  /**
-   * Removes the test's account, repeating the request while the site is overloaded (HTTP 503). A 404
-   * is fine: API-12 has already deleted the account, or the test failed before creating it.
-   */
   @AfterEach
   void deleteTestAccount() {
-    Response response =
-        await("deleting " + email)
-            .pollInSameThread() // keeps the request in this test's Allure and ReportPortal logs
-            .pollDelay(Duration.ZERO)
-            .pollInterval(CLEANUP_RETRY_INTERVAL)
-            .atMost(CLEANUP_TIMEOUT)
-            .until(
-                () -> accountApiClient.deleteAccount(email, PASSWORD),
-                deleteResponse -> deleteResponse.statusCode() != 503);
-
-    assertThat(response.statusCode()).as("HTTP status of deleting %s", email).isEqualTo(200);
-    assertThat(JsonPath.from(response.asString()).getInt("responseCode"))
-        .as("responseCode of deleting %s", email)
-        .isIn(200, 404);
+    TestAccountCleanup.deleteAccount(email, PASSWORD);
   }
 
   @Test

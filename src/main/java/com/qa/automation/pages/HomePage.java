@@ -10,6 +10,8 @@ public class HomePage extends BasePage {
 
   private final By logoutLink = By.cssSelector("a[href='/logout']");
 
+  private final By deleteAccountLink = By.cssSelector("a[href='/delete_account']");
+
   public HomePage(WebDriver driver) {
     super(driver);
   }
@@ -22,7 +24,15 @@ public class HomePage extends BasePage {
     return isNotVisible(loggedInUser, Timeouts.MEDIUM);
   }
 
+  public String getLoggedInText() {
+    return getText(loggedInUser);
+  }
+
   public void logout() {
     click(logoutLink);
+  }
+
+  public void deleteAccount() {
+    click(deleteAccountLink);
   }
 }

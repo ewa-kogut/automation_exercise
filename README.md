@@ -61,6 +61,7 @@ automation-exercise-tests
     │   │       ├── BasePage.java             # explicit-wait helpers: click, type, getText, isVisible, isNotVisible
     │   │       ├── HomePage.java
     │   │       ├── LoginPage.java
+    │   │       ├── SignupPage.java           # account details form, "Account Created!", "Account Deleted!"
     │   │       ├── ProductsPage.java         # All Products page: title, list, first product, search, add to cart
     │   │       ├── ProductDetailsPage.java   # product name, category, price, availability, condition, brand
     │   │       ├── CartPage.java             # cart table: names, prices, quantities, totals
@@ -75,12 +76,14 @@ automation-exercise-tests
         │   │   ├── ApiAssertions.java        # shared check of HTTP status, responseCode, message
         │   │   ├── ProductsApiTests.java     # productsList: GET, POST not supported; searchProduct: match, missing param
         │   │   ├── BrandsApiTests.java       # brandsList: GET list, PUT not supported
-        │   │   └── LoginApiTests.java        # verifyLogin: valid, invalid, missing params, DELETE
+        │   │   ├── LoginApiTests.java        # verifyLogin: valid, invalid, missing params, DELETE
+        │   │   └── TestAccountCleanup.java   # deletes accounts that tests created, also used by UI tests
         │   └── webui
         │       ├── BaseWebTests.java         # driver setup/teardown, opens app, accepts cookies
         │       ├── CartTests.java            # adding products to the cart
         │       ├── LoginTests.java
         │       ├── ProductsTests.java        # product list, product details, search
+        │       ├── RegistrationTests.java    # registering a new user and deleting the account
         │       └── SubscriptionTests.java    # subscribing from the home and cart pages
         └── resources
             ├── META-INF/services/...Extension # registers console progress and the ReportPortal JUnit 5 agent
@@ -96,6 +99,7 @@ Each test has a unique ID, a JUnit `@Tag` that matches the scenario number on th
 
 | ID | Layer | Test class | Scenario | Status |
 | --- | --- | --- | --- | --- |
+| `TC-01` | UI | `RegistrationTests` | Registers a new user with generated data, checks "Logged in as", then deletes the account | Implemented |
 | `TC-02` | UI | `LoginTests` | Login with valid credentials shows "Logged in as" | Implemented |
 | `TC-03` | UI | `LoginTests` | Invalid credentials show "Your email or password is incorrect!" – unknown email, wrong password, both (parameterised) | Implemented |
 | `TC-04` | UI | `LoginTests` | Logout returns to the login page and hides "Logged in as" | Implemented |
@@ -378,6 +382,7 @@ The link in the description is clickable when *Manage Jenkins → Security → M
 - [x] `BasePage` with explicit-wait helpers
 - [x] `BaseWebTests` with per-test driver lifecycle
 - [x] Cookie banner handling
+- [x] UI: registration with generated test data, cleaned up through the API
 - [x] UI: successful login
 - [x] UI: login with invalid credentials (parameterised) and logout
 - [x] UI: product list, product details and product search
@@ -407,7 +412,6 @@ The link in the description is clickable when *Manage Jenkins → Security → M
 
 **Next**
 
-- [ ] UI: registration (generated test data)
 - [ ] UI: categories and brands
 - [ ] UI: end-to-end checkout
 - [ ] Hybrid tests: create the user via API, verify in UI, clean up via API
