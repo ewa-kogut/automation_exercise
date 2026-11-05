@@ -50,8 +50,8 @@ def dashboardArgs() {
   if (!dashboardEnabled()) {
     return ''
   }
-  return " \"-Dmaven.test.additionalClasspath=${params.DASHBOARD_JAR}\""
-      + " -Ddashboard.run.id=${dashboardRunId()}"
+  String classpath = "\"-Dmaven.test.additionalClasspath=${params.DASHBOARD_JAR}\""
+  return " ${classpath} -Ddashboard.run.id=${dashboardRunId()}"
 }
 
 // Adds the build's dashboard link to the build page and the Console Output.
@@ -74,9 +74,9 @@ def runTests(String filter, String stageName, String extraArgs = '') {
   String ids = testIdsFilter()
   String groups = ids ? " -Dgroups=${ids}" : ''
   String execution = " -Dthreads=${params.THREADS ?: '1'} -Dreruns=${reruns()}"
+  String dashboard = dashboardArgs()
   String args =
-      "test -Dtest=\"${filter}\"${groups}${execution} -Dmaven.test.failure.ignore=true${extraArgs}"
-          + dashboardArgs()
+      "test -Dtest=\"${filter}\"${groups}${execution} -Dmaven.test.failure.ignore=true${extraArgs}${dashboard}"
   if (params.REPORT_PORTAL) {
     withCredentials([string(credentialsId: 'rp-api-key', variable: 'RP_API_KEY')]) {
       String attributes = "build:${env.BUILD_NUMBER};stage:${stageName}"
