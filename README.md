@@ -1,5 +1,7 @@
 # Automation Exercise – Test Automation Framework
 
+[![Tests](https://github.com/ewa-kogut/automation_exercise/actions/workflows/tests.yml/badge.svg?branch=main)](https://github.com/ewa-kogut/automation_exercise/actions/workflows/tests.yml)
+
 UI and API test automation framework for [Automation Exercise](https://automationexercise.com), a demo e-commerce application built for practicing test automation. The site exposes both a web UI ([26 test scenarios](https://automationexercise.com/test_cases)) and a public REST API ([14 endpoints](https://automationexercise.com/api_list)), so the project covers both layers.
 
 ## Tech Stack
@@ -25,6 +27,8 @@ UI and API test automation framework for [Automation Exercise](https://automatio
 automation-exercise-tests
 ├── .claude/skills/run-and-heal
 │   └── SKILL.md                          # Claude Code skill: run tests, fix failures, re-run
+├── .github/workflows
+│   └── tests.yml                         # GitHub Actions: runs all tests on every push
 ├── .mvn/wrapper
 │   └── maven-wrapper.properties          # pins the Maven version used by mvnw
 ├── docker
@@ -65,7 +69,8 @@ automation-exercise-tests
     │   │       ├── ProductsPage.java         # All Products page: title, list, first product, search, add to cart
     │   │       ├── ProductDetailsPage.java   # product name, category, price, availability, condition, brand
     │   │       ├── CartPage.java             # cart table: names, prices, quantities, totals
-    │   │       └── CheckoutPage.java         # placeholder
+    │   │       ├── CheckoutPage.java         # addresses, order review, comment, place order
+    │   │       └── PaymentPage.java          # payment form and the "Order Placed!" page
     │   └── resources
     │       ├── config.properties             # shared, committed settings
     │       └── config-local.properties       # local credentials – git-ignored, not committed
@@ -81,6 +86,7 @@ automation-exercise-tests
         │   └── webui
         │       ├── BaseWebTests.java         # driver setup/teardown, opens app, accepts cookies
         │       ├── CartTests.java            # adding products to the cart
+        │       ├── CheckoutTests.java        # end-to-end purchase, registering during checkout
         │       ├── LoginTests.java
         │       ├── ProductsTests.java        # product list, product details, search
         │       ├── RegistrationTests.java    # registering a new user and deleting the account
@@ -110,6 +116,7 @@ Each test has a unique ID, a JUnit `@Tag` that matches the scenario number on th
 | `TC-11` | UI | `SubscriptionTests` | Subscribing from the cart page footer shows the success message | Implemented |
 | `TC-12` | UI | `CartTests` | Two added products are in the cart with the right name, price, quantity and total | Implemented |
 | `TC-13` | UI | `CartTests` | Product quantity in the cart | Planned (skipped) |
+| `TC-14` | UI | `CheckoutTests` | End-to-end purchase: a guest fills the cart, registers during checkout, reviews the address and order, pays and sees the confirmation | Implemented |
 | `TC-27` | UI | `ProductsTests` | Negative case, not on the site's list: searching for an unknown term shows "Searched Products" and no products | Implemented |
 | `API-01` | API | `ProductsApiTests` | `GET /api/productsList` returns HTTP 200, `responseCode` 200 and a non-empty product list | Implemented |
 | `API-02` | API | `ProductsApiTests` | `POST /api/productsList` – method not supported (`405`) | Implemented |
@@ -330,6 +337,16 @@ The build history shows the chosen options next to each build number, e.g. `UI |
 
 JDK 21 must be installed on the Jenkins machine, and Chrome or Edge for local runs. The Jenkins Windows service has no desktop, so the pipeline runs a local browser headless; on Grid the browser has its own screen.
 
+## GitHub Actions
+
+`.github/workflows/tests.yml` runs all tests in headless Chrome on every push to `main` or `develop`. To start it by hand, open the **Actions** tab, choose **Tests** and click **Run workflow**. The badge at the top of this README shows the result of the latest run on `main`.
+
+The tests that log in need the test account, so the repository has two secrets under *Settings → Secrets and variables → Actions*: `TEST_USER_EMAIL` and `TEST_USER_PASSWORD`. GitHub hides their values in the logs.
+
+The workflow does not upload reports or screenshots, because screenshots can show the test account's email and the files of a public repository's runs can be downloaded by anyone with a GitHub account.
+
+The tests use the live demo site, so a red badge can also mean that the site was overloaded or blocked GitHub's servers. Check the log before you treat it as a bug.
+
 ## Local Tools (Docker)
 
 The `docker/` folder holds Docker Compose files for two free, self-hosted tools. Both are based on the official files, with host ports changed so they do not clash with Jenkins (port 8080). They need [Docker Desktop](https://www.docker.com/products/docker-desktop/) to be running.
@@ -387,6 +404,7 @@ The link in the description is clickable when *Manage Jenkins → Security → M
 - [x] UI: login with invalid credentials (parameterised) and logout
 - [x] UI: product list, product details and product search
 - [x] UI: adding products to the cart
+- [x] UI: end-to-end checkout, registering during checkout
 - [x] UI: subscription from the home and cart pages
 - [x] UI: negative cases – signup with an existing email, search with no results
 - [x] Screenshot and page HTML on UI test failure
@@ -400,6 +418,7 @@ The link in the description is clickable when *Manage Jenkins → Security → M
 - [x] Test case descriptions linked to the test IDs (`docs/test-cases.md`)
 - [x] Ad blocking (`block.ads`) against full-screen ads that swallow clicks
 - [x] Jenkins pipeline (`Jenkinsfile`) with JUnit and Allure reports
+- [x] GitHub Actions pipeline with a status badge
 - [x] API: products list (GET) and unsupported POST
 - [x] API: `verifyLogin` positive and negative cases
 - [x] API: brands list (GET) and unsupported PUT
@@ -413,10 +432,8 @@ The link in the description is clickable when *Manage Jenkins → Security → M
 **Next**
 
 - [ ] UI: categories and brands
-- [ ] UI: end-to-end checkout
 - [ ] Hybrid tests: create the user via API, verify in UI, clean up via API
 - [ ] JUnit tags (`smoke`, `regression`)
-- [ ] GitHub Actions pipeline
 - [ ] ReportPortal: REST Assured request/response logs
 
 ## Author

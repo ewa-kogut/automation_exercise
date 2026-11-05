@@ -31,6 +31,7 @@ Every case says where the automated test differs from the scenario on the site, 
 | [TC-11](#tc-11-subscription-on-the-cart-page) | Subscription on the cart page | UI | `SubscriptionTests#shouldSubscribeFromCartPage` |
 | [TC-12](#tc-12-add-products-in-cart) | Add products in cart | UI | `CartTests#shouldAddTwoProductsToCart` |
 | [TC-13](#tc-13-product-quantity-in-cart) | Product quantity in cart (planned, skipped) | UI | `CartTests#shouldKeepChosenQuantityInCart` |
+| [TC-14](#tc-14-place-order-register-while-checkout) | Place order: register while checkout | UI | `CheckoutTests#shouldPlaceOrderWhenRegisteringDuringCheckout` |
 | [TC-27](#tc-27-search-with-no-results) | Search with no results | UI | `ProductsTests#shouldShowNoProductsForUnknownSearchTerm` |
 | [API-01](#api-01-get-all-products-list) | Get all products list | API | `ProductsApiTests#shouldReturnProductsSuccessfully` |
 | [API-02](#api-02-post-to-all-products-list) | POST to all products list | API | `ProductsApiTests#shouldRejectPostToProductsList` |
@@ -204,6 +205,33 @@ wait the test clicks the *Add to cart* button on the product card instead.
 
 **Not automated yet.** The test exists with `@Disabled`, so the scenario is visible in reports as
 skipped until it is written.
+
+### TC-14 Place order: register while checkout
+
+The end-to-end purchase. Each run uses a new random email and a test card number, and the site takes
+no real payment.
+
+| Step | Action | Expected result |
+| --- | --- | --- |
+| 1 | As a guest, open *Products*, add two products to the cart and open the cart. | |
+| 2 | Click *Proceed To Checkout*, then *Register / Login* in the dialog. | The signup form opens. |
+| 3 | Sign up with a name and the random email, fill in the account details and create the account. | "ACCOUNT CREATED!" is shown. |
+| 4 | Click *Continue*. | "Logged in as Test User" is shown in the header. |
+| 5 | Open the cart and click *Proceed To Checkout*. | The delivery and invoice addresses show the details from step 3. The order lists both products, and the total amount is the sum of their prices. |
+| 6 | Enter a comment and click *Place Order*. | The payment form opens. |
+| 7 | Enter the card details and click *Pay and Confirm Order*. | "ORDER PLACED!" and "Congratulations! Your order has been confirmed!" are shown. |
+| 8 | Click *Delete Account*. | "ACCOUNT DELETED!" is shown. |
+
+**Cleanup:** if the test fails before step 8, an API call deletes the account afterwards.
+
+**Differs from the site:**
+- The site checks the message "Your order has been placed successfully!". The page shows it only
+  for a moment before it moves on, so waiting for it could make the test unreliable. The test checks
+  the "Order Placed!" page instead, which stays on screen.
+- The site only says to verify the address and the order. The test checks each address detail, both
+  product names and the total.
+- The site's final click on *Continue* is left out, and the checks "home page is visible" and "cart
+  page is displayed" are not separate assertions: the test fails anyway if those pages do not open.
 
 ### TC-27 Search with no results
 

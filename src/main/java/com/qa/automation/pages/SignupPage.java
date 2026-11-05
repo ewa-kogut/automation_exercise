@@ -1,10 +1,23 @@
 package com.qa.automation.pages;
 
+import java.util.List;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 
 /** The pages after the signup form: account details, "Account Created!", "Account Deleted!". */
 public class SignupPage extends BasePage {
+
+  /** How the checkout page shows the details from {@link #fillAddressInformation()}. */
+  public static final List<String> ADDRESS_DETAILS =
+      List.of(
+          "Mrs. Test User",
+          "None",
+          "1 Test Street",
+          "Flat 1",
+          "Toronto Ontario",
+          "12345",
+          "Canada",
+          "123456789");
 
   private final By accountInformationHeader = By.cssSelector(".login-form h2 b");
 

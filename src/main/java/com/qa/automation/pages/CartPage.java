@@ -16,12 +16,25 @@ public class CartPage extends BasePage {
 
   private final By totals = By.cssSelector("#cart_info_table .cart_total_price");
 
+  private final By proceedToCheckoutButton = By.cssSelector("a.check_out");
+
+  private final By registerLoginLink = By.cssSelector("#checkoutModal a[href='/login']");
+
   public CartPage(WebDriver driver) {
     super(driver);
   }
 
   public void openCartPage() {
     click(cartLink);
+  }
+
+  public void proceedToCheckout() {
+    click(proceedToCheckoutButton);
+  }
+
+  /** The dialog that a guest sees after clicking Proceed To Checkout. */
+  public void registerFromCheckoutDialog() {
+    click(registerLoginLink);
   }
 
   public List<String> getProductNames() {
