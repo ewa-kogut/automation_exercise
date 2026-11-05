@@ -6,6 +6,8 @@ import org.openqa.selenium.WebDriver;
 
 public class CartPage extends BasePage {
 
+  private final By cartLink = By.cssSelector(".shop-menu a[href='/view_cart']");
+
   private final By productNames = By.cssSelector("#cart_info_table .cart_description h4 a");
 
   private final By prices = By.cssSelector("#cart_info_table .cart_price p");
@@ -16,6 +18,10 @@ public class CartPage extends BasePage {
 
   public CartPage(WebDriver driver) {
     super(driver);
+  }
+
+  public void openCartPage() {
+    click(cartLink);
   }
 
   public List<String> getProductNames() {

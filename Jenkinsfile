@@ -22,6 +22,47 @@ def testIdsFilter() {
   return (ids ==~ /(.*,)?ALL(,.*)?/) ? '' : ids
 }
 
+// Live Test Dashboard: true when DASHBOARD is ticked and the jar is on the Jenkins machine.
+// The jar path goes into a shell command, so only ordinary path characters are allowed.
+def dashboardEnabled() {
+  if (!params.DASHBOARD) {
+    return false
+  }
+  String jar = params.DASHBOARD_JAR ?: ''
+  if (!(jar ==~ /[A-Za-z0-9_:\\\/. -]+/)) {
+    error("DASHBOARD_JAR: use a plain file path. Got: ${jar}")
+  }
+  if (!fileExists(jar)) {
+    echo "Dashboard: jar not found at ${jar}. This build runs without the dashboard."
+    return false
+  }
+  return true
+}
+
+// One ID for the whole build, so the API and UI stages appear together as one run.
+def dashboardRunId() {
+  String job = env.JOB_NAME.replaceAll(/[^A-Za-z0-9_-]/, '-')
+  String shortJob = job.length() > 40 ? job.substring(0, 40) : job
+  return "${shortJob}-${env.BUILD_NUMBER}"
+}
+
+def dashboardArgs() {
+  if (!dashboardEnabled()) {
+    return ''
+  }
+  return " \"-Dmaven.test.additionalClasspath=${params.DASHBOARD_JAR}\""
+      + " -Ddashboard.run.id=${dashboardRunId()}"
+}
+
+// Adds the build's dashboard link to the build page and the Console Output.
+def linkDashboard() {
+  if (dashboardEnabled()) {
+    String url = "http://localhost:8095/?run=${dashboardRunId()}"
+    echo "Dashboard for this build: ${url}"
+    currentBuild.description += " | <a href=\"${url}\">Dashboard</a>"
+  }
+}
+
 // Failed tests must not stop the pipeline: the junit step marks the stage and the build UNSTABLE.
 // With TEST_IDS set, a stage that has none of the selected tests runs nothing and stays green.
 // With REPORT_PORTAL checked, results also go to ReportPortal as one launch per stage, tagged
@@ -35,6 +76,7 @@ def runTests(String filter, String stageName, String extraArgs = '') {
   String execution = " -Dthreads=${params.THREADS ?: '1'} -Dreruns=${reruns()}"
   String args =
       "test -Dtest=\"${filter}\"${groups}${execution} -Dmaven.test.failure.ignore=true${extraArgs}"
+          + dashboardArgs()
   if (params.REPORT_PORTAL) {
     withCredentials([string(credentialsId: 'rp-api-key', variable: 'RP_API_KEY')]) {
       String attributes = "build:${env.BUILD_NUMBER};stage:${stageName}"
@@ -152,6 +194,16 @@ pipeline {
         defaultValue: false,
         description: 'Also send results to ReportPortal (http://localhost:8090). '
             + 'Needs the Secret text credential rp-api-key.')
+    booleanParam(
+        name: 'DASHBOARD',
+        defaultValue: false,
+        description: 'Also send results to Live Test Dashboard and add a link to this build. '
+            + 'Start the dashboard first: it must be running at http://localhost:8095.')
+    string(
+        name: 'DASHBOARD_JAR',
+        defaultValue: 'C:/Users/ewapa/IdeaProjects/live-test-dashboard/target/live-test-dashboard.jar',
+        trim: true,
+        description: 'Where the dashboard jar is on the Jenkins machine. Used only with DASHBOARD.')
   }
 
   options {
@@ -178,6 +230,7 @@ pipeline {
           String threads = params.THREADS ?: '1'
           currentBuild.description =
               "${suite()} | ${browser()}${where} | ${threads}x | rerun ${reruns()} | ${ids}"
+          linkDashboard()
         }
         mvnw('clean test-compile')
       }

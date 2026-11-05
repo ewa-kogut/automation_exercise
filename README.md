@@ -46,7 +46,8 @@ automation-exercise-tests
     │   │   │   ├── LoginApiClient.java       # REST Assured client for /verifyLogin
     │   │   │   └── ProductsApiClient.java    # REST Assured client for /productsList, /searchProduct
     │   │   ├── components
-    │   │   │   └── CookieBanner.java         # accepts the consent banner if shown
+    │   │   │   ├── CookieBanner.java         # accepts the consent banner if shown
+    │   │   │   └── SubscriptionFooter.java   # subscription form in the footer of every page
     │   │   ├── config
     │   │   │   ├── Config.java               # layered configuration loader
     │   │   │   └── Timeouts.java             # SHORT / MEDIUM / LONG wait durations
@@ -79,7 +80,8 @@ automation-exercise-tests
         │       ├── BaseWebTests.java         # driver setup/teardown, opens app, accepts cookies
         │       ├── CartTests.java            # adding products to the cart
         │       ├── LoginTests.java
-        │       └── ProductsTests.java        # product list, product details, search
+        │       ├── ProductsTests.java        # product list, product details, search
+        │       └── SubscriptionTests.java    # subscribing from the home and cart pages
         └── resources
             ├── META-INF/services/...Extension # registers console progress and the ReportPortal JUnit 5 agent
             ├── allure.properties             # writes Allure results to target/allure-results
@@ -100,7 +102,10 @@ Each test has a unique ID, a JUnit `@Tag` that matches the scenario number on th
 | `TC-05` | UI | `LoginTests` | Signing up with an existing email shows "Email Address already exist!" | Implemented |
 | `TC-08` | UI | `ProductsTests` | All Products page shows the list; the first product's page shows its name, category, price, availability, condition and brand | Implemented |
 | `TC-09` | UI | `ProductsTests` | Searching shows "Searched Products", and every result's name contains the search term | Implemented |
+| `TC-10` | UI | `SubscriptionTests` | Subscribing from the home page footer shows the success message | Implemented |
+| `TC-11` | UI | `SubscriptionTests` | Subscribing from the cart page footer shows the success message | Implemented |
 | `TC-12` | UI | `CartTests` | Two added products are in the cart with the right name, price, quantity and total | Implemented |
+| `TC-13` | UI | `CartTests` | Product quantity in the cart | Planned (skipped) |
 | `TC-27` | UI | `ProductsTests` | Negative case, not on the site's list: searching for an unknown term shows "Searched Products" and no products | Implemented |
 | `API-01` | API | `ProductsApiTests` | `GET /api/productsList` returns HTTP 200, `responseCode` 200 and a non-empty product list | Implemented |
 | `API-02` | API | `ProductsApiTests` | `POST /api/productsList` – method not supported (`405`) | Implemented |
@@ -310,6 +315,8 @@ Other parameters:
 | **BROWSER** | `chrome`, `edge`, `firefox`, `chrome-mobile` | Browser for the UI tests; `chrome-mobile` emulates a phone screen. |
 | **GRID** | on / off | Runs the UI tests on Selenium Grid at `http://localhost:4444` (start it first). Watch them live at http://localhost:7900 (Chrome), 7901 (Edge) or 7902 (Firefox). |
 | **REPORT_PORTAL** | on / off | Also sends results to ReportPortal (see *ReportPortal*). |
+| **DASHBOARD** | on / off | Also sends results to [Live Test Dashboard](#live-test-dashboard) and adds a link to the build. |
+| **DASHBOARD_JAR** | file path | Where the dashboard jar is on the Jenkins machine. Used only with **DASHBOARD**. |
 
 **Charts.** After a full run (`TEST_IDS` = `ALL`) the [Plot](https://plugins.jenkins.io/plot/) plugin adds a point to three charts on the job page (*Plots* in the side menu): passed, failed and skipped **API tests**, the same for **UI tests**, and the **stage duration** in seconds. The pipeline writes the values to small CSV files in `target/plot/` (first line: series names, second line: this build's values). Runs with selected test IDs add no point, so every point counts the same tests. A stage skipped by SUITE adds no point to its series. Durations depend on THREADS, BROWSER and GRID, so compare builds with the same options. The charts show the whole history: `keepRecords: true` keeps the points of builds that Jenkins deleted (the job keeps only the last 20 builds), and there is no `numBuilds` limit. Without `keepRecords`, Plot deletes those points from its data file for good. The charts are 750×450 pixels; Plot has no setting for their size.
 
@@ -347,6 +354,18 @@ The agent fixes framework problems: changed locators, missing waits, test bugs a
 
 Java sources follow [Google Java Style](https://google.github.io/styleguide/javaguide.html): 2-space indentation, a 100-character line limit, and static imports before regular imports. Formatting is done with [google-java-format](https://github.com/google/google-java-format). In IntelliJ IDEA, install the google-java-format plugin, enable it in *Settings → google-java-format Settings*, and run *Code → Reformat Code* before committing.
 
+## Live Test Dashboard
+
+[Live Test Dashboard](https://github.com/ewa-kogut/live-test-dashboard) is a separate tool that shows a run live in the browser, and keeps every run with its own link. This project needs no code for it: the jar is added to the test run only when you want it.
+
+```powershell
+.\mvnw -B test "-Dmaven.test.additionalClasspath=C:\path\to\live-test-dashboard.jar"
+```
+
+In Jenkins, start the dashboard, tick **DASHBOARD** in *Build with Parameters*, and open the **Dashboard** link in the build's description or Console Output. Both test stages appear together as one run. If the jar or the dashboard is missing, the build runs normally without it.
+
+The link in the description is clickable when *Manage Jenkins → Security → Markup Formatter* is set to **Safe HTML**. With **Plain text**, use the link in the Console Output.
+
 ## Roadmap
 
 **Done**
@@ -363,6 +382,7 @@ Java sources follow [Google Java Style](https://google.github.io/styleguide/java
 - [x] UI: login with invalid credentials (parameterised) and logout
 - [x] UI: product list, product details and product search
 - [x] UI: adding products to the cart
+- [x] UI: subscription from the home and cart pages
 - [x] UI: negative cases – signup with an existing email, search with no results
 - [x] Screenshot and page HTML on UI test failure
 - [x] Headless browser switch (`remote`) for Jenkins / CI

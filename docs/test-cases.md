@@ -26,7 +26,10 @@ Every case says where the automated test differs from the scenario on the site, 
 | [TC-05](#tc-05-register-user-with-existing-email) | Register user with existing email | UI | `LoginTests#shouldShowErrorForSignupWithExistingEmail` |
 | [TC-08](#tc-08-all-products-and-product-details) | All products and product details | UI | `ProductsTests#shouldShowProductListAndProductDetails` |
 | [TC-09](#tc-09-search-product) | Search product | UI | `ProductsTests#shouldShowMatchingProductsAfterSearch` |
+| [TC-10](#tc-10-subscription-on-the-home-page) | Subscription on the home page | UI | `SubscriptionTests#shouldSubscribeFromHomePage` |
+| [TC-11](#tc-11-subscription-on-the-cart-page) | Subscription on the cart page | UI | `SubscriptionTests#shouldSubscribeFromCartPage` |
 | [TC-12](#tc-12-add-products-in-cart) | Add products in cart | UI | `CartTests#shouldAddTwoProductsToCart` |
+| [TC-13](#tc-13-product-quantity-in-cart) | Product quantity in cart (planned, skipped) | UI | `CartTests#shouldKeepChosenQuantityInCart` |
 | [TC-27](#tc-27-search-with-no-results) | Search with no results | UI | `ProductsTests#shouldShowNoProductsForUnknownSearchTerm` |
 | [API-01](#api-01-get-all-products-list) | Get all products list | API | `ProductsApiTests#shouldReturnProductsSuccessfully` |
 | [API-02](#api-02-post-to-all-products-list) | POST to all products list | API | `ProductsApiTests#shouldRejectPostToProductsList` |
@@ -127,6 +130,30 @@ other terms, such as `top`, include products without that word in the name. The 
 page is visible" is not a separate assertion: the test fails anyway if the *Products* link is
 missing.
 
+### TC-10 Subscription on the home page
+
+| Step | Action | Expected result |
+| --- | --- | --- |
+| 1 | Open the home page. | The footer's title is "Subscription" (any case). |
+| 2 | Enter a random email and click the arrow button. | "You have been successfully subscribed!" is shown. |
+
+**Differs from the site:** the site scrolls down to the footer first. The test has no separate step,
+because Selenium scrolls to an element before clicking it. The site's check "home page is visible" is
+not a separate assertion: the test fails anyway if the form is missing.
+
+**What this proves:** on the site, the message comes only from JavaScript in the browser, and no
+request is sent. So the test checks the page's behaviour, not that a subscription was saved. No email
+inbox is needed. The message disappears after 1.5 seconds, so the test reads it right after subscribing.
+
+### TC-11 Subscription on the cart page
+
+| Step | Action | Expected result |
+| --- | --- | --- |
+| 1 | Open the home page and click *Cart*. | The URL ends with `/view_cart`, and the footer's title is "Subscription" (any case). |
+| 2 | Enter a random email and click the arrow button. | "You have been successfully subscribed!" is shown. |
+
+The differences and limits of TC-10 apply here too.
+
 ### TC-12 Add products in cart
 
 | Step | Action | Expected result |
@@ -148,6 +175,11 @@ button stops moving (`BasePage.clickWhenNotMoving`).
 
 **Phones:** with `browser=chrome-mobile` there is no hover, so the overlay stays hidden. After a short
 wait the test clicks the *Add to cart* button on the product card instead.
+
+### TC-13 Product quantity in cart
+
+**Not automated yet.** The test exists with `@Disabled`, so the scenario is visible in reports as
+skipped until it is written.
 
 ### TC-27 Search with no results
 

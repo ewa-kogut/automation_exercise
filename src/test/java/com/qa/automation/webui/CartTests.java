@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.qa.automation.pages.CartPage;
 import com.qa.automation.pages.ProductsPage;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -37,5 +38,17 @@ public class CartTests extends BaseWebTests {
     assertThat(cartPage.getPrices()).containsExactly(firstPrice, secondPrice);
     assertThat(cartPage.getQuantities()).containsExactly("1", "1");
     assertThat(cartPage.getTotals()).containsExactly(firstPrice, secondPrice);
+  }
+
+  @Test
+  @Disabled("Not automated yet: planned as the next cart scenario")
+  @Tag("TC-13")
+  @DisplayName("Should keep the chosen product quantity in the cart")
+  void shouldKeepChosenQuantityInCart() {
+    // Arrange – not automated yet
+
+    // Act – not automated yet
+
+    // Assert – not automated yet
   }
 }
