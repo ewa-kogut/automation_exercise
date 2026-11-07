@@ -25,8 +25,10 @@ UI and API test automation framework for [Automation Exercise](https://automatio
 
 ```
 automation-exercise-tests
-├── .claude/skills/run-and-heal
-│   └── SKILL.md                          # Claude Code skill: run tests, fix failures, re-run
+├── .claude/skills                        # Claude Code skills
+│   ├── run-and-heal/SKILL.md             # run tests, fix failures, re-run
+│   ├── new-ui-test/SKILL.md              # automate a UI scenario from the site
+│   └── check-secrets/SKILL.md            # look for credentials before a commit
 ├── .github/workflows
 │   └── tests.yml                         # GitHub Actions: runs all tests on every push
 ├── .mvn/wrapper
@@ -360,9 +362,21 @@ The `docker/` folder holds Docker Compose files for two free, self-hosted tools.
 - Selenium Grid: each browser node runs up to 3 tests at once (`SE_NODE_MAX_SESSIONS`). To watch a test, open http://localhost:7900 (Chrome), 7901 (Edge) or 7902 (Firefox) and click *Connect*, or click the camera icon next to a session at http://localhost:4444. The ports are open only on this computer, so there is no VNC password. Safari is not available: it runs only on macOS.
 - Stop with the same command, replacing `up -d` with `stop`; data is kept in Docker volumes. Passwords can be overridden in a git-ignored `.env` file next to each compose file.
 
-## Agent-Assisted Run and Heal
+## Claude Code Skills
 
-The repository includes a [Claude Code](https://claude.com/claude-code) skill in `.claude/skills/run-and-heal/`. It runs the tests, investigates every failure against the live application, fixes broken test code, and re-runs to confirm the fix:
+The repository includes [Claude Code](https://claude.com/claude-code) skills in `.claude/skills/`. They write the project's rules down once, so the AI agent follows them every time instead of being reminded.
+
+| Skill | What it does |
+| --- | --- |
+| `/run-and-heal [filter]` | Runs the tests, finds the cause of each failure, fixes broken test code and runs again |
+| `/new-ui-test <number>` | Automates a scenario from the site: checks the live pages, writes page objects and the test with cleanup, runs it three times and updates the documentation |
+| `/check-secrets [reports]` | Before a commit or push, looks for passwords, keys, tokens, real email addresses and personal paths, and reports them with masked values. It changes nothing |
+
+None of the skills commits, pushes or switches branches.
+
+### Run and heal
+
+`/run-and-heal` runs the tests, investigates every failure against the live application, fixes broken test code, and re-runs to confirm the fix:
 
 ```
 /run-and-heal                  # whole suite
