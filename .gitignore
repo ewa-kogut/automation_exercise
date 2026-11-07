@@ -49,3 +49,7 @@ screenshots/
 *.log
 ### Allure runtime cache (allure-maven) ###
 .allure/
+
+### ReportPortal agent lock files ###
+reportportal.lock
+reportportal.sync

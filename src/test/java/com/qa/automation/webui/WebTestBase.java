@@ -10,7 +10,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.openqa.selenium.WebDriver;
 
 @ExtendWith(ScreenshotOnFailureExtension.class)
-public abstract class BaseWebTests {
+public abstract class WebTestBase {
 
   protected WebDriver driver;
 

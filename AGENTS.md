@@ -30,10 +30,11 @@ Use the Maven Wrapper. Maven is not installed globally.
   - `components/` – reusable page parts
   - `api/clients/` – REST Assured clients
   - `config/` – `Config`, `Timeouts`
-  - `driver/` – `DriverFactory`
+  - `driver/` – `DriverFactory`, `DriverManager`
+  - `extensions/` – JUnit extensions: `ScreenshotOnFailureExtension`, `ConsoleProgressExtension`
 - `src/test/java/com/qa/automation/`
-  - `webui/` – UI tests, `BaseWebTests`, `ScreenshotOnFailureExtension`
-  - `api/` – API tests
+  - `webui/` – UI tests and their base class, `WebTestBase`
+  - `api/` – API tests, `ApiAssertions`, `TestAccountCleanup`
 
 ## Conventions
 
@@ -51,10 +52,10 @@ Use the Maven Wrapper. Maven is not installed globally.
 - `@MethodSource` uses the short method name, never `"pkg.Class#method"`. If the data lives in another class, add a one-line static method in the test class that delegates to it.
 - Use AssertJ (`assertThat`) with `.as(...)` descriptions for boolean checks.
 - Prefer `@ParameterizedTest` for variations of the same scenario, e.g. negative cases.
-- Tests must be independent. Each UI test gets a fresh browser from `BaseWebTests`.
+- Tests must be independent. Each UI test gets a fresh browser from `WebTestBase`.
 
 ### UI (page objects)
-- Page objects extend `BasePage` and use its wait helpers: `click`, `type`, `getText`, `isVisible`, `isNotVisible`.
+- Page objects and components extend `BasePage` and use its wait helpers, e.g. `click`, `type`, `selectByText`, `getText`, `isVisible`, `isNotVisible`.
 - Never use `Thread.sleep` or raw `driver.findElement` in page objects.
 - Locators are `private final By` fields. Prefer, in this order: `data-qa` attributes, `id`, short CSS selectors. Use XPath only when matching on text is unavoidable.
 - Before writing or changing a locator, confirm it against the live HTML (`curl -s https://automationexercise.com/<path>`).

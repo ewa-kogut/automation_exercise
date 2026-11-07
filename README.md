@@ -84,7 +84,7 @@ automation-exercise-tests
         │   │   ├── LoginApiTests.java        # verifyLogin: valid, invalid, missing params, DELETE
         │   │   └── TestAccountCleanup.java   # deletes accounts that tests created, also used by UI tests
         │   └── webui
-        │       ├── BaseWebTests.java         # driver setup/teardown, opens app, accepts cookies
+        │       ├── WebTestBase.java          # driver setup/teardown, opens app, accepts cookies
         │       ├── CartTests.java            # adding products to the cart
         │       ├── CheckoutTests.java        # end-to-end purchase, registering during checkout
         │       ├── LoginTests.java
@@ -137,9 +137,9 @@ Each test has a unique ID, a JUnit `@Tag` that matches the scenario number on th
 
 **Page Object Model.** Page classes hold locators and page actions, so tests read as business scenarios. Pages extend `BasePage`, which wraps every interaction in an explicit wait (`WebDriverWait` + `ExpectedConditions`); there are no `Thread.sleep` calls.
 
-**Base test.** UI tests extend `BaseWebTests`, which before each test creates a fresh WebDriver, opens `web.base.url` and accepts the cookie banner (only when ads are not blocked, see `block.ads`), and after each test quits the driver. Every test gets its own browser session, so tests stay independent.
+**Base test.** UI tests extend `WebTestBase`, which before each test creates a fresh WebDriver, opens `web.base.url` and accepts the cookie banner (only when ads are not blocked, see `block.ads`), and after each test quits the driver. Every test gets its own browser session, so tests stay independent.
 
-**Failure artifacts.** `BaseWebTests` registers `ScreenshotOnFailureExtension`. When a UI test fails, the extension saves a screenshot (`.png`) and the page HTML (`.html`) to `target/screenshots/` while the browser is still open. It also prints the current URL and both file paths to the console, and attaches the screenshot and HTML to the Allure report. Screenshots can show the test account's email address, so treat them as sensitive when sharing build artifacts.
+**Failure artifacts.** `WebTestBase` registers `ScreenshotOnFailureExtension`. When a UI test fails, the extension saves a screenshot (`.png`) and the page HTML (`.html`) to `target/screenshots/` while the browser is still open. It also prints the current URL and both file paths to the console, and attaches the screenshot and HTML to the Allure report. Screenshots can show the test account's email address, so treat them as sensitive when sharing build artifacts.
 
 **API clients.** HTTP calls live in client classes (`api/clients`), and tests only call client methods and assert on the result. Clients extend `BaseApiClient`, which reads `api.base.url` and starts every request with `request()`: the base URL plus the `AllureRestAssured` filter, so the Allure report shows each request and response. A new client only extends `BaseApiClient` and adds its endpoint methods, e.g. `request().when().get("/brandsList")`. Tests create clients with `new BrandsApiClient()`.
 
@@ -175,7 +175,7 @@ block.ads=true
 
 `remote` controls how a local browser runs. With `remote=false` (the default) the browser window opens, so you can watch every step. With `remote=true` the browser runs headless at 1920×1080, with no window, as needed on Jenkins. Override it for one run with `-Dremote=true`, or with the `REMOTE` environment variable.
 
-`block.ads` (default `true`) stops the browser from reaching the site's ad networks (`googlesyndication.com`, `doubleclick.net`, `googleadservices.com`, `adtrafficquality.google`). Their full-screen ads (`#google_vignette` in the URL) cover the page and swallow clicks, which made tests fail at random, most often on Grid and in `chrome-mobile`. Chrome and Edge resolve these domains to "not found"; Firefox gets a proxy auto-config (PAC) script that sends them to a closed local port. Both work locally and on Grid. The Google consent (cookie) banner is loaded by the same script, so with blocked ads it does not appear and `BaseWebTests` skips it. Use `-Dblock.ads=false` to see the site as a real visitor does.
+`block.ads` (default `true`) stops the browser from reaching the site's ad networks (`googlesyndication.com`, `doubleclick.net`, `googleadservices.com`, `adtrafficquality.google`). Their full-screen ads (`#google_vignette` in the URL) cover the page and swallow clicks, which made tests fail at random, most often on Grid and in `chrome-mobile`. Chrome and Edge resolve these domains to "not found"; Firefox gets a proxy auto-config (PAC) script that sends them to a closed local port. Both work locally and on Grid. The Google consent (cookie) banner is loaded by the same script, so with blocked ads it does not appear and `WebTestBase` skips it. Use `-Dblock.ads=false` to see the site as a real visitor does.
 
 `threads` (Maven property, default `1`) sets how many tests run at the same time, e.g. `./mvnw -B test -Dthreads=3`. JUnit runs classes and methods in parallel, and each test still gets its own browser: `DriverManager` keeps one WebDriver per thread in a `ThreadLocal`. The setting lives in the Surefire configuration in `pom.xml`, so runs from IntelliJ IDEA stay sequential. On Selenium Grid each browser node takes up to 3 tests at once.
 
@@ -397,7 +397,7 @@ The link in the description is clickable when *Manage Jenkins → Security → M
 - [x] Layered configuration with local, git-ignored secrets
 - [x] Configurable timeouts
 - [x] `BasePage` with explicit-wait helpers
-- [x] `BaseWebTests` with per-test driver lifecycle
+- [x] `WebTestBase` with per-test driver lifecycle
 - [x] Cookie banner handling
 - [x] UI: registration with generated test data, cleaned up through the API
 - [x] UI: successful login

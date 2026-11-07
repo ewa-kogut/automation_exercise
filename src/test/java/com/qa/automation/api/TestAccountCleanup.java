@@ -17,8 +17,8 @@ public final class TestAccountCleanup {
   private TestAccountCleanup() {}
 
   /**
-   * Repeats the request while the site is overloaded (HTTP 503). A 404 is fine: the test has already
-   * deleted the account, or it failed before creating it.
+   * Repeats the request while the site is overloaded (HTTP 503). A 404 is fine: the test has
+   * already deleted the account, or it failed before creating it.
    */
   public static void deleteAccount(String email, String password) {
     AccountApiClient accountApiClient = new AccountApiClient();

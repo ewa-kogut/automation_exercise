@@ -42,6 +42,10 @@ class AccountApiTests {
 
     // Assert
     assertApiResponse(response, 201, "User created!");
+    JsonPath user = JsonPath.from(accountApiClient.getUserDetailByEmail(email).asString());
+    assertThat(user.getInt("responseCode")).as("The new user can be found").isEqualTo(200);
+    assertThat(user.getString("user.email")).isEqualTo(email);
+    assertThat(user.getString("user.name")).isEqualTo(NAME);
   }
 
   @Test

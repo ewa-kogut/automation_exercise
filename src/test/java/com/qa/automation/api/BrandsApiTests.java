@@ -28,6 +28,9 @@ class BrandsApiTests {
     assertThat(response.statusCode()).isEqualTo(200);
     assertThat(json.getInt("responseCode")).isEqualTo(200);
     assertThat(json.getList("brands")).isNotEmpty();
+    assertThat(json.getList("brands.id")).doesNotContainNull().doesNotHaveDuplicates();
+    assertThat(json.getList("brands.brand", String.class))
+        .allSatisfy(brand -> assertThat(brand).isNotBlank());
   }
 
   @Test

@@ -12,7 +12,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
-public class RegistrationTests extends BaseWebTests {
+public class RegistrationTests extends WebTestBase {
 
   private static final String NAME = "Test User";
   private static final String PASSWORD = "Test-password-1";
@@ -40,12 +40,13 @@ public class RegistrationTests extends BaseWebTests {
 
     // Act
     loginPage.signup(NAME, email);
-    assertThat(signupPage.getAccountInformationHeader()).isEqualTo("ENTER ACCOUNT INFORMATION");
+    String accountInformationHeader = signupPage.getAccountInformationHeader();
     signupPage.fillAccountInformation(PASSWORD);
     signupPage.fillAddressInformation();
     signupPage.clickCreateAccount();
 
     // Assert
+    assertThat(accountInformationHeader).isEqualTo("ENTER ACCOUNT INFORMATION");
     assertThat(signupPage.getAccountCreatedHeader()).isEqualTo("ACCOUNT CREATED!");
     signupPage.clickContinue();
     assertThat(homePage.getLoggedInText()).isEqualTo("Logged in as " + NAME);

@@ -82,8 +82,9 @@ public class ProductsPage extends BasePage {
   }
 
   /**
-   * With a mouse, hovering shows an overlay that covers the product, and its button takes the click.
-   * A phone has no hover, so the overlay stays hidden and the button on the product card is used.
+   * With a mouse, hovering shows an overlay that covers the product, and its button takes the
+   * click. A phone has no hover, so the overlay stays hidden and the button on the product card is
+   * used.
    */
   public void addProductToCart(String productId) {
     String addToCartButton = "a[data-product-id='" + productId + "']";

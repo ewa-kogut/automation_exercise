@@ -9,7 +9,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
-public class SubscriptionTests extends BaseWebTests {
+public class SubscriptionTests extends WebTestBase {
 
   private static final String SUCCESS_MESSAGE = "You have been successfully subscribed!";
 
@@ -19,7 +19,7 @@ public class SubscriptionTests extends BaseWebTests {
   @Tag("TC-10")
   @DisplayName("Should subscribe from the home page footer")
   void shouldSubscribeFromHomePage() {
-    // Arrange – BaseWebTests has opened the home page
+    // Arrange – WebTestBase has opened the home page
     SubscriptionFooter footer = new SubscriptionFooter(driver);
     assertThat(footer.getTitle()).isEqualToIgnoringCase("Subscription");
 

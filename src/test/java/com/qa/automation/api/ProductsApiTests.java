@@ -28,6 +28,15 @@ class ProductsApiTests {
     assertThat(response.statusCode()).isEqualTo(200);
     assertThat(json.getInt("responseCode")).isEqualTo(200);
     assertThat(json.getList("products")).isNotEmpty();
+    assertThat(json.getList("products.id")).doesNotContainNull().doesNotHaveDuplicates();
+    assertThat(json.getList("products.name", String.class))
+        .allSatisfy(name -> assertThat(name).isNotBlank());
+    assertThat(json.getList("products.price", String.class))
+        .allSatisfy(price -> assertThat(price).matches("Rs\\. \\d+"));
+    assertThat(json.getList("products.brand", String.class))
+        .allSatisfy(brand -> assertThat(brand).isNotBlank());
+    assertThat(json.getList("products.category.category", String.class))
+        .allSatisfy(category -> assertThat(category).isNotBlank());
   }
 
   @Test

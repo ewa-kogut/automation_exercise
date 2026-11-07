@@ -9,7 +9,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
-public class CartTests extends BaseWebTests {
+public class CartTests extends WebTestBase {
 
   private static final String FIRST_PRODUCT_ID = "1";
   private static final String SECOND_PRODUCT_ID = "2";

@@ -249,7 +249,7 @@ This negative case is not on the site's list, so its number continues after the 
 
 | Request | Expected result |
 | --- | --- |
-| `GET /api/productsList` | HTTP `200`, `responseCode` `200`, the `products` list is not empty. |
+| `GET /api/productsList` | HTTP `200`, `responseCode` `200`, the `products` list is not empty. Every product has a unique `id`, a `name`, a `price` such as `Rs. 500`, a `brand` and a category. |
 
 ### API-02 POST to all products list
 
@@ -264,7 +264,7 @@ not depend on what is sent.
 
 | Request | Expected result |
 | --- | --- |
-| `GET /api/brandsList` | HTTP `200`, `responseCode` `200`, the `brands` list is not empty. |
+| `GET /api/brandsList` | HTTP `200`, `responseCode` `200`, the `brands` list is not empty. Every brand has a unique `id` and a name. |
 
 ### API-04 PUT to all brands list
 
@@ -338,6 +338,7 @@ every test has a new email, and the API has no request that lists existing accou
 | Request | Expected result |
 | --- | --- |
 | `POST /api/createAccount` with all account fields | HTTP `200`, `responseCode` `201`, `message` "User created!" |
+| `GET /api/getUserDetailByEmail` with the new email | `responseCode` `200`, and the user has the email and name that were sent. |
 
 ### API-12 Delete user account
 
