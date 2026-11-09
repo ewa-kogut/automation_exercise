@@ -11,6 +11,12 @@ on:
 permissions:
   contents: read
 
+# One run per branch at a time: a new run (push or manual) cancels the older run that is still
+# going on the same branch, because the newer one tests the newer code.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   tests:
     runs-on: ubuntu-latest
