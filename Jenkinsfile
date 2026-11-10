@@ -22,11 +22,23 @@ def testIdsFilter() {
   return (ids ==~ /(.*,)?ALL(,.*)?/) ? '' : ids
 }
 
-// Live Test Dashboard: true when DASHBOARD is ticked and the jar is on the Jenkins machine.
-// The jar path goes into a shell command, so only ordinary path characters are allowed.
+// Live Test Dashboard. Its server listens on this port on the Jenkins machine.
+def dashboardUrl() {
+  return 'http://localhost:8095'
+}
+
+// True when startDashboard() found the server running or started it.
 def dashboardEnabled() {
+  return env.DASHBOARD_READY == 'true'
+}
+
+// With DASHBOARD ticked, starts the server (java -jar DASHBOARD_JAR) if it is not running yet.
+// JENKINS_NODE_COOKIE keeps Jenkins from stopping the server when the build ends, so the
+// build's link keeps working. If the server does not start, the build runs without it.
+// The jar path goes into a shell command, so only ordinary path characters are allowed.
+def startDashboard() {
   if (!params.DASHBOARD) {
-    return false
+    return
   }
   String jar = params.DASHBOARD_JAR ?: ''
   if (!(jar ==~ /[A-Za-z0-9_:\\\/. -]+/)) {
@@ -34,9 +46,53 @@ def dashboardEnabled() {
   }
   if (!fileExists(jar)) {
     echo "Dashboard: jar not found at ${jar}. This build runs without the dashboard."
-    return false
+    return
   }
-  return true
+  int status
+  withEnv([
+      'JENKINS_NODE_COOKIE=dontKillMe',
+      "DASHBOARD_URL=${dashboardUrl()}",
+      "DASHBOARD_JAR_PATH=${jar}"]) {
+    if (isUnix()) {
+      status = sh(returnStatus: true, script: '''
+        curl -sf "$DASHBOARD_URL/api/runs" > /dev/null && exit 0
+        nohup java -jar "$DASHBOARD_JAR_PATH" > /dev/null 2>&1 &
+        for i in $(seq 20); do
+          sleep 0.5
+          curl -sf "$DASHBOARD_URL/api/runs" > /dev/null && exit 0
+        done
+        exit 1
+      ''')
+    } else {
+      status = powershell(returnStatus: true, script: '''
+        function Test-Dashboard {
+          try {
+            Invoke-WebRequest "$env:DASHBOARD_URL/api/runs" -UseBasicParsing -TimeoutSec 2 | Out-Null
+            return $true
+          } catch {
+            return $false
+          }
+        }
+        if (Test-Dashboard) {
+          exit 0
+        }
+        Start-Process java -ArgumentList '-jar', "`"$env:DASHBOARD_JAR_PATH`""
+        for ($i = 0; $i -lt 20; $i++) {
+          Start-Sleep -Milliseconds 500
+          if (Test-Dashboard) {
+            exit 0
+          }
+        }
+        exit 1
+      ''')
+    }
+  }
+  if (status == 0) {
+    env.DASHBOARD_READY = 'true'
+  } else {
+    echo "Dashboard: the server did not start at ${dashboardUrl()}. " +
+        'This build runs without the dashboard.'
+  }
 }
 
 // One ID for the whole build, so the API and UI stages appear together as one run.
@@ -57,7 +113,7 @@ def dashboardArgs() {
 // Adds the build's dashboard link to the build page and the Console Output.
 def linkDashboard() {
   if (dashboardEnabled()) {
-    String url = "http://localhost:8095/?run=${dashboardRunId()}"
+    String url = "${dashboardUrl()}/?run=${dashboardRunId()}"
     echo "Dashboard for this build: ${url}"
     currentBuild.description += " | <a href=\"${url}\">Dashboard</a>"
   }
@@ -197,8 +253,9 @@ pipeline {
     booleanParam(
         name: 'DASHBOARD',
         defaultValue: false,
-        description: 'Also send results to Live Test Dashboard and add a link to this build. '
-            + 'Start the dashboard first: it must be running at http://localhost:8095.')
+        description: 'Also send results to Live Test Dashboard (http://localhost:8095) and add a '
+            + 'link to this build. If the server is not running, the build starts it, and it '
+            + 'keeps running after the build.')
     string(
         name: 'DASHBOARD_JAR',
         defaultValue: 'C:/Users/ewapa/IdeaProjects/live-test-dashboard/target/live-test-dashboard.jar',
@@ -230,6 +287,7 @@ pipeline {
           String threads = params.THREADS ?: '1'
           currentBuild.description =
               "${suite()} | ${browser()}${where} | ${threads}x | rerun ${reruns()} | ${ids}"
+          startDashboard()
           linkDashboard()
         }
         mvnw('clean test-compile')
