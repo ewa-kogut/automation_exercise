@@ -28,6 +28,7 @@ automation-exercise-tests
 ├── .claude/skills                        # Claude Code skills
 │   ├── run-and-heal/SKILL.md             # run tests, fix failures, re-run
 │   ├── new-ui-test/SKILL.md              # automate a UI scenario from the site
+│   ├── new-api-test/SKILL.md             # automate an API scenario
 │   └── check-secrets/SKILL.md            # look for credentials before a commit
 ├── .github/workflows
 │   └── tests.yml                         # GitHub Actions: runs all tests on every push
@@ -328,7 +329,7 @@ Other parameters:
 | **BROWSER** | `chrome`, `edge`, `firefox`, `chrome-mobile` | Browser for the UI tests; `chrome-mobile` emulates a phone screen. |
 | **GRID** | on / off | Runs the UI tests on Selenium Grid at `http://localhost:4444` (start it first). Watch them live at http://localhost:7900 (Chrome), 7901 (Edge) or 7902 (Firefox). |
 | **REPORT_PORTAL** | on / off | Also sends results to ReportPortal (see *ReportPortal*). |
-| **DASHBOARD** | on / off | Also sends results to [Live Test Dashboard](#live-test-dashboard) and adds a link to the build. |
+| **DASHBOARD** | on / off | Also sends results to [Live Test Dashboard](#live-test-dashboard) and adds a link to the build. Starts the dashboard server if it is not running. |
 | **DASHBOARD_JAR** | file path | Where the dashboard jar is on the Jenkins machine. Used only with **DASHBOARD**. |
 
 **Charts.** After a full run (`TEST_IDS` = `ALL`) the [Plot](https://plugins.jenkins.io/plot/) plugin adds a point to three charts on the job page (*Plots* in the side menu): passed, failed and skipped **API tests**, the same for **UI tests**, and the **stage duration** in seconds. The pipeline writes the values to small CSV files in `target/plot/` (first line: series names, second line: this build's values). Runs with selected test IDs add no point, so every point counts the same tests. A stage skipped by SUITE adds no point to its series. Durations depend on THREADS, BROWSER and GRID, so compare builds with the same options. The charts show the whole history: `keepRecords: true` keeps the points of builds that Jenkins deleted (the job keeps only the last 20 builds), and there is no `numBuilds` limit. Without `keepRecords`, Plot deletes those points from its data file for good. The charts are 750×450 pixels; Plot has no setting for their size.
@@ -370,6 +371,7 @@ The repository includes [Claude Code](https://claude.com/claude-code) skills in 
 | --- | --- |
 | `/run-and-heal [filter]` | Runs the tests, finds the cause of each failure, fixes broken test code and runs again |
 | `/new-ui-test <number>` | Automates a scenario from the site: checks the live pages, writes page objects and the test with cleanup, runs it three times and updates the documentation |
+| `/new-api-test <number or description>` | Automates an API from the site or an extra case: checks the real response with `curl`, writes the client method and the test with cleanup, runs it three times and updates the documentation |
 | `/check-secrets [reports]` | Before a commit or push, looks for passwords, keys, tokens, real email addresses and personal paths, and reports them with masked values. It changes nothing |
 
 None of the skills commits, pushes or switches branches.
@@ -397,7 +399,7 @@ Java sources follow [Google Java Style](https://google.github.io/styleguide/java
 .\mvnw -B test "-Dmaven.test.additionalClasspath=C:\path\to\live-test-dashboard.jar"
 ```
 
-In Jenkins, start the dashboard, tick **DASHBOARD** in *Build with Parameters*, and open the **Dashboard** link in the build's description or Console Output. Both test stages appear together as one run. If the jar or the dashboard is missing, the build runs normally without it.
+In Jenkins, tick **DASHBOARD** in *Build with Parameters*, and open the **Dashboard** link in the build's description or Console Output. If nothing answers at http://localhost:8095, the build starts the server itself (`java -jar` with **DASHBOARD_JAR**), and the server keeps running after the build, so the link keeps working. Both test stages appear together as one run. If the jar is missing or the server does not start, the build runs normally without it.
 
 The link in the description is clickable when *Manage Jenkins → Security → Markup Formatter* is set to **Safe HTML**. With **Plain text**, use the link in the Console Output.
 
