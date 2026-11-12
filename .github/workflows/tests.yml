@@ -1,9 +1,11 @@
-# Runs all tests on every push to main or develop, and on demand from the Actions tab.
-# Pull requests are left out on purpose: a pull request from a fork gets no secrets, so tests that
-# log in would fail, and this also keeps the secrets away from code that nobody has reviewed yet.
+# Runs all tests on every pull request into main or develop, on every push to them, and on demand
+# from the Actions tab. Pull requests from forks are skipped: a fork gets no secrets, so tests that
+# log in would fail, and the secrets stay away from code that nobody has reviewed yet.
 name: Tests
 
 on:
+  pull_request:
+    branches: [main, develop]
   push:
     branches: [main, develop]
   workflow_dispatch:
@@ -19,6 +21,10 @@ concurrency:
 
 jobs:
   tests:
+    # Pull requests from forks get no secrets (see the comment at the top).
+    if: >-
+      github.event_name != 'pull_request' ||
+      github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
