@@ -57,6 +57,24 @@ public abstract class BasePage {
     }
   }
 
+  /** Returns false when neither element becomes visible within the timeout. */
+  protected boolean isEitherVisible(By first, By second, Duration timeout) {
+    try {
+      return new WebDriverWait(driver, timeout)
+          .until(
+              ExpectedConditions.or(
+                  ExpectedConditions.visibilityOfElementLocated(first),
+                  ExpectedConditions.visibilityOfElementLocated(second)));
+    } catch (TimeoutException e) {
+      return false;
+    }
+  }
+
+  /** Counts the visible elements right now, without waiting. */
+  protected int countVisible(By locator) {
+    return (int) driver.findElements(locator).stream().filter(WebElement::isDisplayed).count();
+  }
+
   protected void click(By locator) {
     waitForClickable(locator).click();
   }

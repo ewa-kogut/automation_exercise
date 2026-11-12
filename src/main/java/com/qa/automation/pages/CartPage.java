@@ -1,5 +1,6 @@
 package com.qa.automation.pages;
 
+import com.qa.automation.config.Timeouts;
 import java.util.List;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
@@ -20,12 +21,23 @@ public class CartPage extends BasePage {
 
   private final By registerLoginLink = By.cssSelector("#checkoutModal a[href='/login']");
 
+  private final By emptyCartMessage = By.id("empty_cart");
+
   public CartPage(WebDriver driver) {
     super(driver);
   }
 
   public void openCartPage() {
     click(cartLink);
+  }
+
+  /**
+   * Waits for the product table or the "Cart is empty!" message, then counts the products. Returns
+   * 0 for an empty cart and for a page that is not the cart at all, e.g. "queue full".
+   */
+  public int getProductCount() {
+    isEitherVisible(productNames, emptyCartMessage, Timeouts.MEDIUM);
+    return countVisible(productNames);
   }
 
   public void proceedToCheckout() {

@@ -243,7 +243,7 @@ creates a new account with a random email, so the shared test account is never c
 | --- | --- | --- |
 | 1 | `POST /api/createAccount` with a name, the random email and the address details. | `responseCode` is `201` (precondition). |
 | 2 | In the browser, click *Signup / Login* and log in with the new account. | "Logged in as Test User" is shown in the header. |
-| 3 | Open *Products*, add two products to the cart and open the cart. | |
+| 3 | Open *Products*, add two products to the cart and open the cart. | The cart lists two products (precondition). Without this check an empty cart fails later as "*Proceed To Checkout* not found", which hides the real cause. |
 | 4 | Click *Proceed To Checkout*. | The delivery and invoice addresses show the details sent to the API in step 1. The order lists both products, and the total amount is the sum of their prices. |
 | 5 | Enter a comment and click *Place Order*. | The payment form opens. |
 | 6 | Enter the card details and click *Pay and Confirm Order*. | "ORDER PLACED!" and "Congratulations! Your order has been confirmed!" are shown. |
