@@ -126,6 +126,9 @@ public class CheckoutTests extends WebTestBase {
     productsPage.continueShopping();
     productsPage.addProductToCart(SECOND_PRODUCT_ID);
     productsPage.viewCart();
+    assertThat(cartPage.getProductCount())
+        .as("Precondition: both products are in the cart")
+        .isEqualTo(2);
 
     // Act – the user checks out, pays and deletes the account in the UI
     cartPage.proceedToCheckout();
