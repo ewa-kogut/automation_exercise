@@ -32,6 +32,7 @@ Every case says where the automated test differs from the scenario on the site, 
 | [TC-12](#tc-12-add-products-in-cart) | Add products in cart | UI | `CartTests#shouldAddTwoProductsToCart` |
 | [TC-13](#tc-13-product-quantity-in-cart) | Product quantity in cart (planned, skipped) | UI | `CartTests#shouldKeepChosenQuantityInCart` |
 | [TC-14](#tc-14-place-order-register-while-checkout) | Place order: register while checkout | UI | `CheckoutTests#shouldPlaceOrderWhenRegisteringDuringCheckout` |
+| [TC-16](#tc-16-place-order-login-before-checkout) | Place order: login before checkout | Hybrid (API + UI) | `CheckoutTests#shouldPlaceOrderWhenLoggedInBeforeCheckout` |
 | [TC-27](#tc-27-search-with-no-results) | Search with no results | UI | `ProductsTests#shouldShowNoProductsForUnknownSearchTerm` |
 | [API-01](#api-01-get-all-products-list) | Get all products list | API | `ProductsApiTests#shouldReturnProductsSuccessfully` |
 | [API-02](#api-02-post-to-all-products-list) | POST to all products list | API | `ProductsApiTests#shouldRejectPostToProductsList` |
@@ -232,6 +233,35 @@ no real payment.
   product names and the total.
 - The site's final click on *Continue* is left out, and the checks "home page is visible" and "cart
   page is displayed" are not separate assertions: the test fails anyway if those pages do not open.
+
+### TC-16 Place order: login before checkout
+
+A hybrid test: the API prepares and checks the data, and the UI does the user's part. Each run
+creates a new account with a random email, so the shared test account is never changed.
+
+| Step | Action | Expected result |
+| --- | --- | --- |
+| 1 | `POST /api/createAccount` with a name, the random email and the address details. | `responseCode` is `201` (precondition). |
+| 2 | In the browser, click *Signup / Login* and log in with the new account. | "Logged in as Test User" is shown in the header. |
+| 3 | Open *Products*, add two products to the cart and open the cart. | The cart lists two products (precondition). Without this check an empty cart fails later as "*Proceed To Checkout* not found", which hides the real cause. |
+| 4 | Click *Proceed To Checkout*. | The delivery and invoice addresses show the details sent to the API in step 1. The order lists both products, and the total amount is the sum of their prices. |
+| 5 | Enter a comment and click *Place Order*. | The payment form opens. |
+| 6 | Enter the card details and click *Pay and Confirm Order*. | "ORDER PLACED!" and "Congratulations! Your order has been confirmed!" are shown. |
+| 7 | Click *Delete Account*. | "ACCOUNT DELETED!" is shown. |
+| 8 | `GET /api/getUserDetailByEmail` with the random email. | `responseCode` is `404`: the account deleted in the UI is gone. |
+
+**Cleanup:** if the test fails before step 7, an API call deletes the account afterwards.
+
+**Differs from the site:**
+- The site's scenario assumes an existing account. The test creates one through the API, which is
+  faster than signing up in the UI and keeps the shared test account unchanged.
+- Step 8 is extra: it checks through the API that deleting the account in the UI really removed it.
+- The checkout page must show the address that was sent to the API, so the test also checks that
+  the API and the website share the same data.
+- The site checks the message "Your order has been placed successfully!". The page shows it only
+  for a moment, so the test checks the "Order Placed!" page instead (as in TC-14).
+- The site's final click on *Continue* is left out, and "home page is visible" and "cart page is
+  displayed" are not separate assertions: the test fails anyway if those pages do not open.
 
 ### TC-27 Search with no results
 

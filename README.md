@@ -31,6 +31,7 @@ automation-exercise-tests
 │   ├── new-api-test/SKILL.md             # automate an API scenario
 │   └── check-secrets/SKILL.md            # look for credentials before a commit
 ├── .github/workflows
+│   ├── code-review.yml                   # GitHub Actions: Claude reviews pull requests into develop
 │   └── tests.yml                         # GitHub Actions: runs all tests on every push
 ├── .mvn/wrapper
 │   └── maven-wrapper.properties          # pins the Maven version used by mvnw
@@ -85,11 +86,12 @@ automation-exercise-tests
         │   │   ├── ProductsApiTests.java     # productsList: GET, POST not supported; searchProduct: match, missing param
         │   │   ├── BrandsApiTests.java       # brandsList: GET list, PUT not supported
         │   │   ├── LoginApiTests.java        # verifyLogin: valid, invalid, missing params, DELETE
-        │   │   └── TestAccountCleanup.java   # deletes accounts that tests created, also used by UI tests
+        │   │   ├── TestAccountCleanup.java   # deletes accounts that tests created, also used by UI tests
+        │   │   └── TestAccountData.java      # account form data for the API, also used by UI tests
         │   └── webui
         │       ├── WebTestBase.java          # driver setup/teardown, opens app, accepts cookies
         │       ├── CartTests.java            # adding products to the cart
-        │       ├── CheckoutTests.java        # end-to-end purchase, registering during checkout
+        │       ├── CheckoutTests.java        # end-to-end purchase: registering during checkout, hybrid API + UI
         │       ├── LoginTests.java
         │       ├── ProductsTests.java        # product list, product details, search
         │       ├── RegistrationTests.java    # registering a new user and deleting the account
@@ -120,6 +122,7 @@ Each test has a unique ID, a JUnit `@Tag` that matches the scenario number on th
 | `TC-12` | UI | `CartTests` | Two added products are in the cart with the right name, price, quantity and total | Implemented |
 | `TC-13` | UI | `CartTests` | Product quantity in the cart | Planned (skipped) |
 | `TC-14` | UI | `CheckoutTests` | End-to-end purchase: a guest fills the cart, registers during checkout, reviews the address and order, pays and sees the confirmation | Implemented |
+| `TC-16` | Hybrid (API + UI) | `CheckoutTests` | Account created through the API; the user logs in, orders and deletes the account in the UI, and the API no longer finds it | Implemented |
 | `TC-27` | UI | `ProductsTests` | Negative case, not on the site's list: searching for an unknown term shows "Searched Products" and no products | Implemented |
 | `API-01` | API | `ProductsApiTests` | `GET /api/productsList` returns HTTP 200, `responseCode` 200 and a non-empty product list | Implemented |
 | `API-02` | API | `ProductsApiTests` | `POST /api/productsList` – method not supported (`405`) | Implemented |
@@ -350,6 +353,21 @@ The workflow does not upload reports or screenshots, because screenshots can sho
 
 The tests use the live demo site, so a red badge can also mean that the site was overloaded or blocked GitHub's servers. Check the log before you treat it as a bug.
 
+### AI code review
+
+`.github/workflows/code-review.yml` runs [Claude Code](https://github.com/anthropics/claude-code-action) on every pull request into `develop`. Claude checks the changes against `AGENTS.md`, puts each problem in an inline comment on the changed line, and ends with a short summary comment. Every inline comment is a review conversation, and `develop` requires all conversations to be resolved, so the pull request cannot be merged until each comment is fixed (or answered) and resolved. A new push to the pull request starts a new review.
+
+Pull requests from forks and drafts are not reviewed: a fork gets no secrets, and a draft is reviewed once it is marked ready.
+
+One-time setup:
+
+1. Install the [Claude GitHub app](https://github.com/apps/claude) on this repository only.
+2. On your computer run `claude setup-token`, log in with the Claude Pro/Max account and copy the token. The review then uses the subscription, so there is no separate API bill.
+3. Add the token as the repository secret `CLAUDE_CODE_OAUTH_TOKEN` (*Settings → Secrets and variables → Actions → New repository secret*).
+4. Protect `develop`: *Settings → Branches → Add branch ruleset* (or *Add classic branch protection rule*) for `develop`, turn on **Require a pull request before merging** and **Require conversation resolution before merging**.
+
+With these rules, changes reach `develop` only through pull requests: work on a feature branch, push it and open a pull request into `develop`.
+
 ## Local Tools (Docker)
 
 The `docker/` folder holds Docker Compose files for two free, self-hosted tools. Both are based on the official files, with host ports changed so they do not clash with Jenkins (port 8080). They need [Docker Desktop](https://www.docker.com/products/docker-desktop/) to be running.
@@ -421,6 +439,7 @@ The link in the description is clickable when *Manage Jenkins → Security → M
 - [x] UI: product list, product details and product search
 - [x] UI: adding products to the cart
 - [x] UI: end-to-end checkout, registering during checkout
+- [x] Hybrid: account created through the API, login and order in the UI, deletion checked through the API
 - [x] UI: subscription from the home and cart pages
 - [x] UI: negative cases – signup with an existing email, search with no results
 - [x] Screenshot and page HTML on UI test failure
@@ -435,6 +454,7 @@ The link in the description is clickable when *Manage Jenkins → Security → M
 - [x] Ad blocking (`block.ads`) against full-screen ads that swallow clicks
 - [x] Jenkins pipeline (`Jenkinsfile`) with JUnit and Allure reports
 - [x] GitHub Actions pipeline with a status badge
+- [x] AI code review of pull requests into `develop` (Claude), merge blocked until comments are resolved
 - [x] API: products list (GET) and unsupported POST
 - [x] API: `verifyLogin` positive and negative cases
 - [x] API: brands list (GET) and unsupported PUT

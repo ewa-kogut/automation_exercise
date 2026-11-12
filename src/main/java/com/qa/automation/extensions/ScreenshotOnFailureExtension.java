@@ -30,6 +30,7 @@ public class ScreenshotOnFailureExtension implements TestExecutionExceptionHandl
   private static final Path OUTPUT_DIR = Path.of("target", "screenshots");
   private static final DateTimeFormatter TIMESTAMP =
       DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss-SSS");
+  private static final String OVERLOAD_PAGE_TEXT = "This website is under heavy load";
 
   @Override
   public void handleTestExecutionException(ExtensionContext context, Throwable throwable)
@@ -67,9 +68,13 @@ public class ScreenshotOnFailureExtension implements TestExecutionExceptionHandl
     ReportPortal.emitLog("Screenshot: " + url, "ERROR", now, screenshot.toFile());
     ReportPortal.emitLog("Page source", "ERROR", now, pageSource.toFile());
 
+    // CI logs have no screenshot or HTML (they are not uploaded), so the title, or a note about the
+    // site's overload page, which has no title, shows whether the site or the test is at fault.
+    String page =
+        html.contains(OVERLOAD_PAGE_TEXT) ? "SITE OVERLOADED (queue full)" : driver.getTitle();
     System.out.printf(
-        "Test failed at %s%n  screenshot: %s%n  page source: %s%n",
-        driver.getCurrentUrl(), screenshot.toAbsolutePath(), pageSource.toAbsolutePath());
+        "Test failed at %s%n  page: %s%n  screenshot: %s%n  page source: %s%n",
+        url, page, screenshot.toAbsolutePath(), pageSource.toAbsolutePath());
   }
 
   private static String fileBaseName(ExtensionContext context) {

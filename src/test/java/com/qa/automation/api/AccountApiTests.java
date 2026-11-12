@@ -1,7 +1,6 @@
 package com.qa.automation.api;
 
 import static com.qa.automation.api.ApiAssertions.assertApiResponse;
-import static java.util.Map.entry;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.qa.automation.api.clients.AccountApiClient;
@@ -105,23 +104,6 @@ class AccountApiTests {
   }
 
   private Map<String, String> accountData() {
-    return Map.ofEntries(
-        entry("name", NAME),
-        entry("email", email),
-        entry("password", PASSWORD),
-        entry("title", "Mrs"),
-        entry("birth_date", "1"),
-        entry("birth_month", "1"),
-        entry("birth_year", "1990"),
-        entry("firstname", "Test"),
-        entry("lastname", "User"),
-        entry("company", "None"),
-        entry("address1", "1 Test Street"),
-        entry("address2", "Flat 1"),
-        entry("country", "Canada"),
-        entry("zipcode", "12345"),
-        entry("state", "Ontario"),
-        entry("city", "Toronto"),
-        entry("mobile_number", "123456789"));
+    return TestAccountData.accountData(NAME, email, PASSWORD);
   }
 }
