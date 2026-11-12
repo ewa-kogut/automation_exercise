@@ -32,7 +32,7 @@ automation-exercise-tests
 │   └── check-secrets/SKILL.md            # look for credentials before a commit
 ├── .github/workflows
 │   ├── code-review.yml                   # GitHub Actions: Claude reviews pull requests into develop
-│   └── tests.yml                         # GitHub Actions: runs all tests on every push
+│   └── tests.yml                         # GitHub Actions: runs all tests on pull requests and pushes
 ├── .mvn/wrapper
 │   └── maven-wrapper.properties          # pins the Maven version used by mvnw
 ├── docker
@@ -40,6 +40,8 @@ automation-exercise-tests
 │   └── selenium-grid/docker-compose.yml  # local Selenium Grid: Chrome, Edge, Firefox + noVNC
 ├── docs
 │   └── test-cases.md                     # test case descriptions, linked to the test IDs
+├── AGENTS.md                             # rules for AI coding agents (conventions, commands, secrets)
+├── CLAUDE.md                             # Claude Code entry point: loads AGENTS.md, lists the skills
 ├── mvnw / mvnw.cmd                       # Maven Wrapper scripts (Unix / Windows)
 ├── Jenkinsfile                           # Jenkins pipeline: compile, API and UI stages, JUnit + Allure reports
 ├── pom.xml
@@ -64,15 +66,15 @@ automation-exercise-tests
     │   │   │   └── DriverManager.java        # holds the current test's WebDriver
     │   │   ├── extensions
     │   │   │   ├── ConsoleProgressExtension.java # prints each test's start, result, time and error to the console
-    │   │   │   └── ScreenshotOnFailureExtension.java # on UI failure: screenshot + HTML to target/screenshots, Allure, ReportPortal
+    │   │   │   └── ScreenshotOnFailureExtension.java # on UI failure: screenshot + HTML to target/screenshots, Allure, ReportPortal; page title or "SITE OVERLOADED" in the console
     │   │   └── pages
-    │   │       ├── BasePage.java             # explicit-wait helpers: click, type, getText, isVisible, isNotVisible
+    │   │       ├── BasePage.java             # explicit-wait helpers: click, type, getText, isVisible, isNotVisible, isEitherVisible, countVisible
     │   │       ├── HomePage.java
     │   │       ├── LoginPage.java
     │   │       ├── SignupPage.java           # account details form, "Account Created!", "Account Deleted!"
     │   │       ├── ProductsPage.java         # All Products page: title, list, first product, search, add to cart
     │   │       ├── ProductDetailsPage.java   # product name, category, price, availability, condition, brand
-    │   │       ├── CartPage.java             # cart table: names, prices, quantities, totals
+    │   │       ├── CartPage.java             # cart table: names, prices, quantities, totals, product count
     │   │       ├── CheckoutPage.java         # addresses, order review, comment, place order
     │   │       └── PaymentPage.java          # payment form and the "Order Placed!" page
     │   └── resources
@@ -145,7 +147,7 @@ Each test has a unique ID, a JUnit `@Tag` that matches the scenario number on th
 
 **Base test.** UI tests extend `WebTestBase`, which before each test creates a fresh WebDriver, opens `web.base.url` and accepts the cookie banner (only when ads are not blocked, see `block.ads`), and after each test quits the driver. Every test gets its own browser session, so tests stay independent.
 
-**Failure artifacts.** `WebTestBase` registers `ScreenshotOnFailureExtension`. When a UI test fails, the extension saves a screenshot (`.png`) and the page HTML (`.html`) to `target/screenshots/` while the browser is still open. It also prints the current URL and both file paths to the console, and attaches the screenshot and HTML to the Allure report. Screenshots can show the test account's email address, so treat them as sensitive when sharing build artifacts.
+**Failure artifacts.** `WebTestBase` registers `ScreenshotOnFailureExtension`. When a UI test fails, the extension saves a screenshot (`.png`) and the page HTML (`.html`) to `target/screenshots/` while the browser is still open. It also prints the current URL, the page title and both file paths to the console, and attaches the screenshot and HTML to the Allure report (and to ReportPortal when it is on). When the site shows its overload page, which has no title, the console says `page: SITE OVERLOADED (queue full)` instead, so a CI log without screenshots still shows whether the site or the test is at fault. Screenshots can show the test account's email address, so treat them as sensitive when sharing build artifacts.
 
 **API clients.** HTTP calls live in client classes (`api/clients`), and tests only call client methods and assert on the result. Clients extend `BaseApiClient`, which reads `api.base.url` and starts every request with `request()`: the base URL plus the `AllureRestAssured` filter, so the Allure report shows each request and response. A new client only extends `BaseApiClient` and adds its endpoint methods, e.g. `request().when().get("/brandsList")`. Tests create clients with `new BrandsApiClient()`.
 
@@ -345,13 +347,13 @@ JDK 21 must be installed on the Jenkins machine, and Chrome or Edge for local ru
 
 ## GitHub Actions
 
-`.github/workflows/tests.yml` runs all tests in headless Chrome on every push to `main` or `develop`. To start it by hand, open the **Actions** tab, choose **Tests** and click **Run workflow**. The badge at the top of this README shows the result of the latest run on `main`.
+`.github/workflows/tests.yml` runs all tests in headless Chrome on every pull request into `main` or `develop`, and again on every push to them (after a merge). Pull requests from forks are skipped, because a fork gets no secrets. A failed test runs once more (`-Dreruns=1`) and is reported as flaky if it then passes. To start the workflow by hand, open the **Actions** tab, choose **Tests** and click **Run workflow**. The badge at the top of this README shows the result of the latest run on `main`.
 
 The tests that log in need the test account, so the repository has two secrets under *Settings → Secrets and variables → Actions*: `TEST_USER_EMAIL` and `TEST_USER_PASSWORD`. GitHub hides their values in the logs.
 
 The workflow does not upload reports or screenshots, because screenshots can show the test account's email and the files of a public repository's runs can be downloaded by anyone with a GitHub account.
 
-The tests use the live demo site, so a red badge can also mean that the site was overloaded or blocked GitHub's servers. Check the log before you treat it as a bug.
+The tests use the live demo site, so a red badge can also mean that the site was overloaded or blocked GitHub's servers. Check the log before you treat it as a bug: `page: SITE OVERLOADED (queue full)` under a failed test means the site was at fault, so use **Re-run failed jobs** later.
 
 ### AI code review
 
@@ -364,9 +366,13 @@ One-time setup:
 1. Install the [Claude GitHub app](https://github.com/apps/claude) on this repository only.
 2. On your computer run `claude setup-token`, log in with the Claude Pro/Max account and copy the token. The review then uses the subscription, so there is no separate API bill.
 3. Add the token as the repository secret `CLAUDE_CODE_OAUTH_TOKEN` (*Settings → Secrets and variables → Actions → New repository secret*).
-4. Protect `develop`: *Settings → Branches → Add branch ruleset* (or *Add classic branch protection rule*) for `develop`, turn on **Require a pull request before merging** and **Require conversation resolution before merging**.
+4. Make `develop` the default branch (*Settings → General → Default branch*). New pull requests then target `develop`, and the action finds `code-review.yml` there: it only runs when the workflow file in the pull request matches the one on the default branch.
+5. Protect `develop` with a ruleset (*Settings → Rules → Rulesets*): **Restrict deletions**, **Block force pushes**, **Require a pull request before merging** with 0 required approvals (you cannot approve your own pull request) and **Require conversation resolution before merging**, and **Require status checks to pass** with `tests` and `review` (they can be chosen after they have run once).
+6. Protect `main` with a second ruleset: deletions, force pushes and merging without a pull request blocked. Merge `develop` into `main` with **Create a merge commit**: squash or rebase would create commits that `develop` does not have.
 
-With these rules, changes reach `develop` only through pull requests: work on a feature branch, push it and open a pull request into `develop`.
+With these rules, changes reach `develop` and `main` only through pull requests: work on a feature branch, push it and open a pull request into `develop`; release with a pull request from `develop` into `main`.
+
+Claude's job is green even when it posts comments. The merge is blocked by the open comments, through the conversation-resolution rule, not by the job's status.
 
 ## Local Tools (Docker)
 
@@ -455,6 +461,7 @@ The link in the description is clickable when *Manage Jenkins → Security → M
 - [x] Jenkins pipeline (`Jenkinsfile`) with JUnit and Allure reports
 - [x] GitHub Actions pipeline with a status badge
 - [x] AI code review of pull requests into `develop` (Claude), merge blocked until comments are resolved
+- [x] Tests on every pull request, protected `develop` and `main` branches (rulesets)
 - [x] API: products list (GET) and unsupported POST
 - [x] API: `verifyLogin` positive and negative cases
 - [x] API: brands list (GET) and unsupported PUT
@@ -468,7 +475,6 @@ The link in the description is clickable when *Manage Jenkins → Security → M
 **Next**
 
 - [ ] UI: categories and brands
-- [ ] Hybrid tests: create the user via API, verify in UI, clean up via API
 - [ ] JUnit tags (`smoke`, `regression`)
 - [ ] ReportPortal: REST Assured request/response logs
 
