@@ -1,0 +1,67 @@
+# Claude reviews every pull request into develop and leaves inline comments on the changed lines.
+# Each inline comment is a review conversation. With "Require conversation resolution before
+# merging" turned on for develop, the pull request cannot be merged until every conversation is
+# resolved. Setup: README.md, section "AI code review".
+name: Code review
+
+on:
+  pull_request:
+    branches: [develop]
+    types: [opened, synchronize, ready_for_review, reopened]
+
+# A new push to the pull request cancels the review of the older commit.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  review:
+    # Pull requests from forks get no secrets, so the review could not log in to Claude.
+    # Drafts are reviewed once they are marked ready.
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      !github.event.pull_request.draft
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      pull-requests: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+
+      - uses: anthropics/claude-code-action@v1
+        with:
+          # A token from "claude setup-token": the review uses the Claude Pro/Max subscription,
+          # so there is no separate API bill.
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          prompt: |
+            REPO: ${{ github.repository }}
+            PR NUMBER: ${{ github.event.pull_request.number }}
+
+            Review this pull request. The PR branch is checked out in the working directory.
+            Follow the project rules in AGENTS.md (code style, Arrange/Act/Assert, @Tag IDs,
+            page object rules, API rules, secrets, documentation sync).
+
+            Look for:
+            - bugs and flaky test code (missing waits, Thread.sleep, raw driver.findElement,
+              assertions in page objects, tests that depend on each other);
+            - broken AGENTS.md conventions;
+            - real credentials, emails or tokens in code, test parameters or logged requests;
+            - README.md and docs/test-cases.md not updated for new or changed tests.
+
+            How to report:
+            - Every issue that must be fixed goes in an inline comment on the changed line, with
+              mcp__github_inline_comment__create_inline_comment and `confirmed: true`. Each inline
+              comment is a conversation that blocks the merge until someone resolves it, so post
+              only real problems, one per comment, and say how to fix it.
+            - Start each inline comment with a severity: **Must fix** or **Should fix**.
+            - Do not comment on things that are fine, and do not repeat an issue that an earlier
+              comment on this pull request already raised (check with `gh pr view --comments`).
+            - Finish with one short top-level summary with `gh pr comment`. If nothing needs
+              fixing, the summary says so and you post no inline comments.
+            - Write the comments in English.
+          claude_args: |
+            --allowedTools "Read,Glob,Grep,mcp__github_inline_comment__create_inline_comment,Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*)"
