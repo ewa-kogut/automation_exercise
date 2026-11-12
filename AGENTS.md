@@ -82,5 +82,7 @@ When tests are added or changed, keep `README.md` in sync:
 
 ## Git
 
-- Work on `develop`. `main` is the stable branch.
+- `develop` is the default branch and `main` is the stable branch. Both are protected: changes reach
+  them only through pull requests (feature branch → `develop` → `main`), which run the tests and
+  Claude's review.
 - Do not commit, push or switch branches unless the user asks.
