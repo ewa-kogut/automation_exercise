@@ -29,10 +29,12 @@ automation-exercise-tests
 │   ├── run-and-heal/SKILL.md             # run tests, fix failures, re-run
 │   ├── new-ui-test/SKILL.md              # automate a UI scenario from the site
 │   ├── new-api-test/SKILL.md             # automate an API scenario
-│   └── check-secrets/SKILL.md            # look for credentials before a commit
+│   ├── check-secrets/SKILL.md            # look for credentials before a commit
+│   └── check-readme/SKILL.md             # check that README and docs match the changes
 ├── .github/workflows
 │   ├── code-review.yml                   # GitHub Actions: Claude reviews pull requests into develop
 │   └── tests.yml                         # GitHub Actions: runs all tests on pull requests and pushes
+├── .mcp.json                             # MCP servers for Claude Code: Jira, Jenkins, ReportPortal (secrets from env vars)
 ├── .mvn/wrapper
 │   └── maven-wrapper.properties          # pins the Maven version used by mvnw
 ├── docker
@@ -66,6 +68,7 @@ automation-exercise-tests
     │   │   │   └── DriverManager.java        # holds the current test's WebDriver
     │   │   ├── extensions
     │   │   │   ├── ConsoleProgressExtension.java # prints each test's start, result, time and error to the console
+    │   │   │   ├── QuietFixturesReportPortalExtension.java # ReportPortal agent that hides passed setUp()/tearDown() from launches
     │   │   │   └── ScreenshotOnFailureExtension.java # on UI failure: screenshot + HTML to target/screenshots, Allure, ReportPortal; page title or "SITE OVERLOADED" in the console
     │   │   └── pages
     │   │       ├── BasePage.java             # explicit-wait helpers: click, type, getText, isVisible, isNotVisible, isEitherVisible, countVisible
@@ -99,7 +102,7 @@ automation-exercise-tests
         │       ├── RegistrationTests.java    # registering a new user and deleting the account
         │       └── SubscriptionTests.java    # subscribing from the home and cart pages
         └── resources
-            ├── META-INF/services/...Extension # registers console progress and the ReportPortal JUnit 5 agent
+            ├── META-INF/services/...Extension # registers console progress and the ReportPortal agent (QuietFixturesReportPortalExtension)
             ├── allure.properties             # writes Allure results to target/allure-results
             ├── junit-platform.properties     # turns on JUnit extension auto-detection
             ├── reportportal.properties       # ReportPortal endpoint, project, launch; off by default
@@ -305,7 +308,7 @@ Sending is **off by default** (`rp.enable=false` in `src/test/resources/reportpo
    - `RP_API_KEY` = the generated key
 3. Run the tests as usual. Each Maven run creates one launch named `automation-exercise` in the `superadmin_personal` project.
 
-Every setting in `reportportal.properties` can be overridden with `-D<key>` or an environment variable (`rp.project` → `RP_PROJECT`). The API key is a secret: keep it in the environment variable, never in a file in the repository. With `RP_ENABLE=true` but no key, the run stops at once with `Neither OAuth 2.0 nor API key authentication is configured`. The agent's anonymous usage statistics are turned off in `pom.xml` (`AGENT_NO_ANALYTICS`).
+Passed `setUp()` and `tearDown()` methods are not sent (`QuietFixturesReportPortalExtension`), so a launch lists only tests; a failed one still appears with its error. Every setting in `reportportal.properties` can be overridden with `-D<key>` or an environment variable (`rp.project` → `RP_PROJECT`). The API key is a secret: keep it in the environment variable, never in a file in the repository. With `RP_ENABLE=true` but no key, the run stops at once with `Neither OAuth 2.0 nor API key authentication is configured`. The agent's anonymous usage statistics are turned off in `pom.xml` (`AGENT_NO_ANALYTICS`).
 
 In Jenkins, add the key once as a *Secret text* credential with the ID `rp-api-key`, then tick **REPORT_PORTAL** in *Build with Parameters*. Each test stage creates its own launch with the attributes `build:<number>` and `stage:api` or `stage:ui`.
 
@@ -397,6 +400,7 @@ The repository includes [Claude Code](https://claude.com/claude-code) skills in 
 | `/new-ui-test <number>` | Automates a scenario from the site: checks the live pages, writes page objects and the test with cleanup, runs it three times and updates the documentation |
 | `/new-api-test <number or description>` | Automates an API from the site or an extra case: checks the real response with `curl`, writes the client method and the test with cleanup, runs it three times and updates the documentation |
 | `/check-secrets [reports]` | Before a commit or push, looks for passwords, keys, tokens, real email addresses and personal paths, and reports them with masked values. It changes nothing |
+| `/check-readme [fix] [base]` | After something is added, changed or removed, checks that `README.md`, `docs/test-cases.md`, the `AGENTS.md` layout and the `CLAUDE.md` skill list match the code: the structure tree, test IDs, settings, Jenkins, Docker, MCP and skills. Compares with `develop` unless another base is given. Reports only; with `fix` it also updates the docs, never the code |
 
 None of the skills commits, pushes or switches branches.
 
@@ -410,6 +414,25 @@ None of the skills commits, pushes or switches branches.
 ```
 
 The agent fixes framework problems: changed locators, missing waits, test bugs and compile errors. It does not weaken assertions, disable tests or touch credentials. When the application itself behaves differently, or the cause is test data or the environment, it reports the problem with evidence instead of changing the test. It never commits.
+
+## MCP Servers
+
+[MCP](https://modelcontextprotocol.io) (Model Context Protocol) lets Claude Code read and act in other tools directly, for example check a Jenkins build log or the history of a test in ReportPortal, instead of the user copying it into the chat. The servers for this project are in `.mcp.json`. Claude Code asks once to approve them; `/mcp` shows their status and has *Reconnect* for a server that failed to start.
+
+| Server | What the agent can do | Needs |
+| --- | --- | --- |
+| `atlassian` | read and create Jira issues, e.g. a bug found by a test run | an Atlassian account; log in once in `/mcp` (OAuth, no token in the file) |
+| `jenkins` | check the controller status, jobs, builds, logs and test results; start a build | the Jenkins **MCP Server** plugin; `JENKINS_MCP_AUTH`; optionally `JENKINS_URL` (default `http://localhost:8080`) |
+| `reportportal` | read launches, test items and their logs | Docker Desktop and ReportPortal running (see *Local Tools (Docker)*); `RP_API_KEY`; optionally `RP_MCP_HOST` and `RP_PROJECT` |
+
+Set the environment variables like the ReportPortal ones (*Start → "Edit environment variables for your account"*), then restart IntelliJ IDEA or the terminal before starting Claude Code:
+
+- `JENKINS_MCP_AUTH` = Base64 of `<user>:<API token>`; create the token in Jenkins under *your user → Security → API Token*. In PowerShell: `[Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes("<user>:<API token>"))`.
+- `RP_API_KEY` = the same ReportPortal API key the tests use.
+- `RP_MCP_HOST` = ReportPortal's address as seen from inside the MCP container. The default `http://host.docker.internal:8090` reaches ReportPortal on this computer; `localhost` does not work inside a container.
+- `RP_PROJECT` = the ReportPortal project, `superadmin_personal` by default.
+
+The file only refers to the variables (`${RP_API_KEY}`), so it holds no secrets and can be committed. If a server shows *failed*: for `reportportal`, check that Docker and ReportPortal are running, then use *Reconnect* in `/mcp`, because Claude Code does not retry on its own; for `jenkins`, check that Jenkins is running and `JENKINS_MCP_AUTH` is set. The agent's access is that of the account behind the token, so it can start or cancel builds. Keep such actions behind a permission prompt in Claude Code.
 
 ## Code Style
 

@@ -1,0 +1,28 @@
+{
+  "mcpServers": {
+    "atlassian": {
+      "type": "http",
+      "url": "https://mcp.atlassian.com/v2/mcp"
+    },
+    "jenkins": {
+      "type": "http",
+      "url": "${JENKINS_URL:-http://localhost:8080}/mcp-server/mcp",
+      "headers": {
+        "Authorization": "Basic ${JENKINS_MCP_AUTH}"
+      }
+    },
+    "reportportal": {
+      "command": "docker",
+      "args": [
+        "run", "-i", "--rm",
+        "-e", "RP_API_TOKEN", "-e", "RP_HOST", "-e", "RP_PROJECT",
+        "reportportal/mcp-server"
+      ],
+      "env": {
+        "RP_API_TOKEN": "${RP_API_KEY}",
+        "RP_HOST": "${RP_MCP_HOST:-http://host.docker.internal:8090}",
+        "RP_PROJECT": "${RP_PROJECT:-superadmin_personal}"
+      }
+    }
+  }
+}

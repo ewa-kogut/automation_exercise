@@ -53,12 +53,12 @@ Automate scenario `TC-$ARGUMENTS` from https://automationexercise.com/test_cases
 
 ## 5. Run it
 
-1. `./mvnw -B test -Dgroups=TC-<number> -Dreruns=0`, three times.
+1. `./mvnw -B test -Dgroups=TC-<number> -Dreruns=0 -Dremote=true`, three times.
 2. If a run fails, open the screenshot and HTML in `target/screenshots/` before changing anything.
    "under heavy load (queue full)" or HTTP 503 is the site being overloaded, not a bug in the test:
    run again.
 3. A failure that comes back is a real problem. Fix it, then run three times again.
-4. Finish with the whole suite: `./mvnw -B test -Dreruns=1`.
+4. Finish with the whole suite: `./mvnw -B test -Dreruns=1 -Dremote=true`.
 
 ## 6. Document
 
