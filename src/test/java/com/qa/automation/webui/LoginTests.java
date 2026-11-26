@@ -34,7 +34,7 @@ public class LoginTests extends WebTestBase {
         .isTrue();
   }
 
-  @ParameterizedTest(name = "{0}")
+  @ParameterizedTest(name = "{displayName} - {0}")
   @EnumSource(LoginPage.InvalidCredentials.class)
   @Tag("TC-03")
   @DisplayName("Should show an error for invalid credentials")

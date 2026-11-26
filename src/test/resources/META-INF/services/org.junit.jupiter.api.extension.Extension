@@ -1,2 +1,2 @@
 com.qa.automation.extensions.ConsoleProgressExtension
-com.epam.reportportal.junit5.ReportPortalExtension
+com.qa.automation.extensions.QuietFixturesReportPortalExtension
