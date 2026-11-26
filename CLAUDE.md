@@ -9,3 +9,5 @@ Project skills live in `.claude/skills/`:
   https://automationexercise.com/api_list, or an extra case (API-15 and up).
 - `/check-secrets [reports]` – before a commit or push, look for credentials, keys and personal data.
   Reports only, changes nothing.
+- `/check-readme [fix] [base]` – after adding or changing something, check that `README.md` and the
+  other docs match the code. Reports only; with `fix` it also updates the docs.

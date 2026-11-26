@@ -20,6 +20,9 @@ Use the Maven Wrapper. Maven is not installed globally.
 | API tests only | `./mvnw -B test -Dtest="com.qa.automation.api.**"` |
 | Tests by ID | `./mvnw -B test -Dgroups=TC-02,API-07` |
 
+- When the agent runs tests, add `-Dremote=true` so the browser runs headless. Do this for
+  every command above and in the skills. Use a visible browser only when the user explicitly
+  asks for one.
 - Results are in `target/surefire-reports/`.
 - When a UI test fails, a screenshot and the page HTML are saved to `target/screenshots/`.
 
@@ -31,7 +34,7 @@ Use the Maven Wrapper. Maven is not installed globally.
   - `api/clients/` – REST Assured clients
   - `config/` – `Config`, `Timeouts`
   - `driver/` – `DriverFactory`, `DriverManager`
-  - `extensions/` – JUnit extensions: `ScreenshotOnFailureExtension`, `ConsoleProgressExtension`
+  - `extensions/` – JUnit extensions: `ScreenshotOnFailureExtension`, `ConsoleProgressExtension`, `QuietFixturesReportPortalExtension`
 - `src/test/java/com/qa/automation/`
   - `webui/` – UI tests and their base class, `WebTestBase`
   - `api/` – API tests, `ApiAssertions`, `TestAccountCleanup`
@@ -79,6 +82,8 @@ When tests are added or changed, keep `README.md` in sync:
 - the *Current Test Coverage* table;
 - `docs/test-cases.md`: steps, expected results and every difference from the scenario on the site, with the reason;
 - the *Roadmap*: move finished items to **Done**.
+
+Before a commit, run `/check-readme` to find gaps (`/check-readme fix` also fills them).
 
 ## Git
 
