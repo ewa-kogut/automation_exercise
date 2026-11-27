@@ -50,7 +50,7 @@ class LoginApiTests {
     assertApiResponse(response, 404, "User not found!");
   }
 
-  @ParameterizedTest(name = "{0}")
+  @ParameterizedTest(name = "{displayName} - {0}")
   @MethodSource("missingParameters")
   @Tag("API-08")
   @DisplayName("POST /verifyLogin - missing parameter returns bad request")

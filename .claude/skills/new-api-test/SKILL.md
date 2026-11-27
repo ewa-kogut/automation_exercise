@@ -62,12 +62,12 @@ that are easy to skip.
 
 ## 5. Run it
 
-1. `./mvnw -B test -Dgroups=API-<number> -Dreruns=0`, three times.
+1. `./mvnw -B test -Dgroups=API-<number> -Dreruns=0 -Dremote=true`, three times.
 2. If a run fails, read the response in `target/surefire-reports/` before changing anything. HTTP 503
    or "under heavy load" is the site being overloaded, not a bug in the test: run again.
 3. A failure that comes back is a real problem. Compare with `curl` again, fix it, then run three
    times again.
-4. Finish with all API tests: `./mvnw -B test -Dtest="com.qa.automation.api.**" -Dreruns=1`.
+4. Finish with all API tests: `./mvnw -B test -Dtest="com.qa.automation.api.**" -Dreruns=1 -Dremote=true`.
 
 ## 6. Document
 

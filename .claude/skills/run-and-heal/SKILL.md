@@ -12,7 +12,7 @@ Run the tests, find out why each failure happens, fix what is broken **in the te
 ## 1. Run
 
 - Filter from the arguments: `$ARGUMENTS`. If empty, run the whole suite.
-- Command (Git Bash): `./mvnw -B test` or `./mvnw -B test -Dtest="<filter>"`.
+- Command (Git Bash): `./mvnw -B test -Dremote=true` or `./mvnw -B test -Dremote=true -Dtest="<filter>"`.
   Add `-Dsurefire.failIfNoSpecifiedTests=false` when the filter is a package pattern.
 - Read the results from `target/surefire-reports/`:
   - `*.txt` – summary per class (`Tests run / Failures / Errors`).
